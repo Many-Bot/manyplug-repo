@@ -1,0 +1,12 @@
+{
+  "noUrl": "Por favor, proporciona una URL.",
+  "downloading": "Descargando audio...",
+  "error": {
+    "noPermission": "yt-dlp: permiso denegado",
+    "notFound": "yt-dlp: no encontrado",
+    "startError": "Error al iniciar descarga:",
+    "downloadFailed": "Descarga fallida. Verifica la URL.",
+    "fileNotFound": "Archivo descargado no encontrado.",
+    "generic": "Error al descargar audio. Intenta de nuevo más tarde."
+  }
+}

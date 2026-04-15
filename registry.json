@@ -1,0 +1,64 @@
+{
+  "lastUpdated": "2026-04-15T00:07:30.616Z",
+  "plugins": {
+    "a": {
+      "name": "a",
+      "author": "freakk.dev",
+      "version": "1.0.0",
+      "category": "humor",
+      "service": false,
+      "dependencies": {}
+    },
+    "adivinhacao": {
+      "name": "adivinhacao",
+      "version": "1.0.0",
+      "category": "games",
+      "service": false,
+      "dependencies": {}
+    },
+    "audio": {
+      "name": "audio",
+      "version": "1.0.0",
+      "category": "media",
+      "service": false,
+      "dependencies": {}
+    },
+    "figurinha": {
+      "name": "figurinha",
+      "version": "1.0.0",
+      "category": "media",
+      "service": false,
+      "dependencies": {
+        "wa-sticker-formatter": "*"
+      }
+    },
+    "forca": {
+      "name": "forca",
+      "version": "1.0.0",
+      "category": "games",
+      "service": false,
+      "dependencies": {}
+    },
+    "many": {
+      "name": "many",
+      "version": "1.0.0",
+      "category": "utility",
+      "service": false,
+      "dependencies": {}
+    },
+    "video": {
+      "name": "video",
+      "version": "1.0.0",
+      "category": "media",
+      "service": false,
+      "dependencies": {}
+    },
+    "xp": {
+      "name": "xp",
+      "version": "0.1.0",
+      "category": "social",
+      "service": true,
+      "dependencies": {}
+    }
+  }
+}

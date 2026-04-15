@@ -1,0 +1,7 @@
+{
+    "name": "audio",
+    "version": "1.0.0",
+    "category": "media",
+    "service": false,
+    "dependencies": {}
+}

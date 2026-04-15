@@ -1,0 +1,12 @@
+{
+  "noUrl": "Please provide a URL.",
+  "downloading": "Downloading video...",
+  "error": {
+    "noPermission": "yt-dlp: permission denied",
+    "notFound": "yt-dlp: not found",
+    "startError": "Failed to start download:",
+    "downloadFailed": "Download failed. Check the URL.",
+    "fileNotFound": "Downloaded file not found.",
+    "generic": "Failed to download video. Try again later."
+  }
+}

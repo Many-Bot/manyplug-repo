@@ -1,0 +1,14 @@
+{
+  "title": "Jogo da Forca",
+  "startCommand": "inicia o jogo",
+  "stopCommand": "encerra o jogo",
+  "started": "Jogo da Forca iniciado!\n\nTema: *{{theme}}*\nPalavra: `{{word}}`\nVidas: {{lives}}\n\nDigite uma letra para adivinhar!",
+  "stopped": "Jogo da Forca encerrado.",
+  "invalidCommand": "Subcomando *{{sub}}* não existe.\nUse",
+  "or": "ou",
+  "won": "Parabéns! Palavra completa: `{{word}}`",
+  "lost": "Fim de jogo! Palavra era: `{{word}}`",
+  "status": "Palavra: `{{word}}`\nVidas: {{lives}}",
+  "correct": "Acertou a letra!",
+  "wrong": "Errou a letra!"
+}

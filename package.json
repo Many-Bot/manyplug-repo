@@ -1,0 +1,17 @@
+{
+  "name": "manyplug-repo",
+  "version": "1.0.0",
+  "description": "This is a mirror of Freakkdev ManyBot's plugin repository (ManyPlug).",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "manager.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "fs-extra": "^11.3.4",
+    "path": "^0.12.7"
+  }
+}

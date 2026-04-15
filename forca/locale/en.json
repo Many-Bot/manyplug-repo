@@ -1,0 +1,14 @@
+{
+  "title": "Hangman Game",
+  "startCommand": "starts the game",
+  "stopCommand": "stops the game",
+  "started": "Hangman game started!\n\nTheme: *{{theme}}*\nWord: `{{word}}`\nLives: {{lives}}\n\nType a letter to guess!",
+  "stopped": "Hangman game ended.",
+  "invalidCommand": "Subcommand *{{sub}}* does not exist.\nUse",
+  "or": "or",
+  "won": "Congratulations! Complete word: `{{word}}`",
+  "lost": "Game over! Word was: `{{word}}`",
+  "status": "Word: `{{word}}`\nLives: {{lives}}",
+  "correct": "Got the letter!",
+  "wrong": "Wrong letter!"
+}

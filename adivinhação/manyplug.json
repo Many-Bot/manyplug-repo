@@ -1,0 +1,7 @@
+{
+    "name": "adivinhacao",
+    "version": "1.0.0",
+    "category": "games",
+    "service": false,
+    "dependencies": {}
+}

@@ -1,0 +1,7 @@
+{
+    "name": "many",
+    "version": "1.0.0",
+    "category": "utility",
+    "service": false,
+    "dependencies": {}
+}

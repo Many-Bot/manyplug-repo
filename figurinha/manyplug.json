@@ -1,0 +1,9 @@
+{
+    "name": "figurinha",
+    "version": "1.0.0",
+    "category": "media",
+    "service": false,
+    "dependencies": {
+        "wa-sticker-formatter": "*"
+    }
+}
