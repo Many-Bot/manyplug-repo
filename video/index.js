@@ -20,7 +20,7 @@ logStream.on("error", err => console.error("[logStream]", err));
 
 const DOWNLOADS_DIR = path.resolve("downloads");
 const YT_DLP = "yt-dlp";
-const UPLOAD_URL = "http://maneos.net/upload";
+const UPLOAD_URL = "https://maneos.net/upload";
 
 const ARGS_BASE = [
   "--extractor-args",     "youtube:player_client=android",
@@ -99,7 +99,7 @@ async function uploadToServer(filePath) {
     throw new Error("Server response missing url");
   }
 
-  return result.url.startsWith("http") ? result.url : `http://maneos.net${result.url}`;
+  return result.url.startsWith("https") ? result.url : `https://maneos.net${result.url}`;
 }
 
 export default async function ({ msg, api }) {

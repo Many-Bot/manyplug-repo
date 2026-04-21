@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-04-21T13:43:02.354Z",
+  "lastUpdated": "2026-04-21T16:31:08.265Z",
   "plugins": {
     "a": {
       "name": "a",
@@ -20,7 +20,7 @@
     "audio": {
       "name": "audio",
       "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "category": "media",
       "service": false,
       "externalDependencies": {
@@ -63,7 +63,7 @@
     "video": {
       "name": "video",
       "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "category": "media",
       "service": false,
       "externalDependencies": {
