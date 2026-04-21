@@ -1,16 +1,17 @@
 {
-  "lastUpdated": "2026-04-21T05:56:16.900Z",
+  "lastUpdated": "2026-04-21T13:23:13.743Z",
   "plugins": {
     "a": {
       "name": "a",
-      "author": "freakk.dev",
+      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
       "version": "1.0.0",
-      "category": "humor",
+      "category": "fun",
       "service": false,
       "dependencies": {}
     },
     "adivinhacao": {
       "name": "adivinhacao",
+      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
       "version": "1.0.0",
       "category": "games",
       "service": false,
@@ -18,6 +19,7 @@
     },
     "audio": {
       "name": "audio",
+      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
       "version": "1.0.0",
       "category": "media",
       "service": false,
@@ -25,6 +27,7 @@
     },
     "figurinha": {
       "name": "figurinha",
+      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
       "version": "1.0.0",
       "category": "media",
       "service": false,
@@ -34,6 +37,7 @@
     },
     "forca": {
       "name": "forca",
+      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
       "version": "1.0.0",
       "category": "games",
       "service": false,
@@ -41,6 +45,7 @@
     },
     "many": {
       "name": "many",
+      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
       "version": "1.0.0",
       "category": "utility",
       "service": false,
@@ -48,10 +53,20 @@
     },
     "video": {
       "name": "video",
-      "version": "1.0.0",
+      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
+      "version": "2.0.0",
       "category": "media",
       "service": false,
-      "dependencies": {}
+      "externalDependencies": {
+        "yt-dlp": {
+          "command": "yt-dlp",
+          "optional": false
+        },
+        "ffmpeg": {
+          "command": "ffmpeg",
+          "optional": false
+        }
+      }
     },
     "obrigado": {
       "name": "obrigado",

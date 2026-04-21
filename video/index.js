@@ -1,14 +1,13 @@
 /**
  * plugins/video/index.js
  *
- * Downloads video via yt-dlp and sends to chat.
- * All processing (download + send + cleanup) is here.
+ * Downloads video via yt-dlp and uploads to server.
+ * All processing (download + upload + cleanup) is here.
  */
 
 import { spawn }       from "child_process";
 import fs              from "fs";
 import path            from "path";
-import os              from "os";
 import { enqueue }     from "../../download/queue.js";
 import { CMD_PREFIX }  from "../../config.js";
 import { createPluginI18n } from "../../utils/pluginI18n.js";
@@ -20,7 +19,8 @@ const logStream = fs.createWriteStream("logs/video-error.log", { flags: "a" });
 logStream.on("error", err => console.error("[logStream]", err));
 
 const DOWNLOADS_DIR = path.resolve("downloads");
-const YT_DLP = os.platform() === "win32" ? ".\\bin\\yt-dlp.exe" : "./bin/yt-dlp";
+const YT_DLP = "yt-dlp";
+const UPLOAD_URL = "http://maneos.net/upload";
 
 const ARGS_BASE = [
   "--extractor-args",     "youtube:player_client=android",
@@ -39,7 +39,6 @@ const ARGS_BASE = [
 
 function downloadVideo(url, id) {
   return new Promise((resolve, reject) => {
-    // Isolated folder just for this download
     const tmpDir = path.join(DOWNLOADS_DIR, id);
     fs.mkdirSync(tmpDir, { recursive: true });
 
@@ -62,10 +61,8 @@ function downloadVideo(url, id) {
         return reject(new Error(t("error.downloadFailed")));
       }
 
-      // Try stdout path first
       let filePath = stdout.trim().split("\n").filter(Boolean).at(-1);
 
-      // Fallback: get the single file inside the isolated folder
       if (!filePath || !fs.existsSync(filePath)) {
         const files = fs.readdirSync(tmpDir).filter(f => !f.endsWith(".part"));
         filePath = files.length === 1 ? path.join(tmpDir, files[0]) : null;
@@ -79,6 +76,30 @@ function downloadVideo(url, id) {
       resolve({ filePath, tmpDir });
     });
   });
+}
+
+async function uploadToServer(filePath) {
+  const fileBuffer = fs.readFileSync(filePath);
+  const fileName = path.basename(filePath);
+
+  const formData = new FormData();
+  formData.append("file", new Blob([fileBuffer]), fileName);
+
+  const response = await fetch(UPLOAD_URL, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  if (!result.url) {
+    throw new Error("Server response missing url");
+  }
+
+  return result.url.startsWith("http") ? result.url : `http://maneos.net${result.url}`;
 }
 
 export default async function ({ msg, api }) {
@@ -98,7 +119,8 @@ export default async function ({ msg, api }) {
   enqueue(
     async () => {
       const { filePath, tmpDir } = await downloadVideo(url, id);
-      await api.sendVideo(filePath);
+      const downloadUrl = await uploadToServer(filePath);
+      await msg.reply(downloadUrl);
       fs.rmSync(tmpDir, { recursive: true, force: true });
       api.log.info(`${CMD_PREFIX}video completed → ${url}`);
     },

@@ -50,14 +50,14 @@ for (const entry of entries) {
 				version: manifest.version
 			});
 			registry.plugins[pluginName] = manifest;
-		} else if (existing.version !== manifest.version) {
+		} else if (JSON.stringify(existing, Object.keys(existing).sort()) !== JSON.stringify(manifest, Object.keys(manifest).sort())) {
 			const oldVersion = existing.version;
-			existing.version = manifest.version;
-			
+			registry.plugins[pluginName] = manifest;
+
 			update.push({
 				name: pluginName,
 				oldVersion: oldVersion,
-				newVersion: existing.version
+				newVersion: manifest.version
 			});
 		}
 	} catch (err) {

@@ -1,8 +1,17 @@
 {
     "name": "video",
     "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "category": "media",
     "service": false,
-    "dependencies": {}
+    "externalDependencies": {
+      "yt-dlp": {
+        "command": "yt-dlp",
+        "optional": false
+      },
+      "ffmpeg": {
+        "command": "ffmpeg",
+        "optional": false
+      }
+    }
 }
