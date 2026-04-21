@@ -25,7 +25,7 @@ const execFileAsync = promisify(execFile);
 
 // ── Constants ────────────────────────────────────────────────
 const DOWNLOADS_DIR    = path.resolve("downloads");
-const FFMPEG           = os.platform() === "win32" ? ".\\bin\\ffmpeg.exe" : "./bin/ffmpeg";
+const FFMPEG           = "ffmpeg";
 const MAX_STICKER_SIZE = 900 * 1024;
 const SESSION_TIMEOUT  = 2 * 60 * 1000;
 const MAX_MEDIA        = 30;
