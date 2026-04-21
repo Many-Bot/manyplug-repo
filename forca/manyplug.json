@@ -1,5 +1,6 @@
 {
     "name": "forca",
+	  "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
     "version": "1.0.0",
     "category": "games",
     "service": false,
