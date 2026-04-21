@@ -1,8 +1,8 @@
 /**
  * plugins/audio/index.js
  *
- * Downloads video via yt-dlp, converts to mp3 via ffmpeg and sends to chat.
- * All processing (download + conversion + send + cleanup) is here.
+ * Downloads audio via yt-dlp, converts to mp3 via ffmpeg and uploads to server.
+ * All processing (download + conversion + upload + cleanup) is here.
  */
 
 import { spawn }       from "child_process";
@@ -10,20 +10,22 @@ import { execFile }    from "child_process";
 import { promisify }   from "util";
 import fs              from "fs";
 import path            from "path";
-import os              from "os";
 import { enqueue }     from "../../download/queue.js";
-import { emptyFolder } from "../../utils/file.js";
 import { CMD_PREFIX }  from "../../config.js";
 import { createPluginI18n } from "../../utils/pluginI18n.js";
 
 const { t } = createPluginI18n(import.meta.url);
 
+fs.mkdirSync("logs", { recursive: true });
 const logStream = fs.createWriteStream("logs/audio-error.log", { flags: "a" });
-const execFileAsync = promisify(execFile);
+logStream.on("error", err => console.error("[logStream]", err));
 
 const DOWNLOADS_DIR = path.resolve("downloads");
-const YT_DLP = os.platform() === "win32" ? ".\\bin\\yt-dlp.exe" : "./bin/yt-dlp";
-const FFMPEG = os.platform() === "win32" ? ".\\bin\\ffmpeg.exe"  : "./bin/ffmpeg";
+const YT_DLP = "yt-dlp";
+const FFMPEG = "ffmpeg";
+const UPLOAD_URL = "http://maneos.net/upload";
+
+const execFileAsync = promisify(execFile);
 
 const ARGS_BASE = [
   "--extractor-args",     "youtube:player_client=android",
@@ -42,9 +44,10 @@ const ARGS_BASE = [
 
 function downloadRaw(url, id) {
   return new Promise((resolve, reject) => {
-    fs.mkdirSync(DOWNLOADS_DIR, { recursive: true });
+    const tmpDir = path.join(DOWNLOADS_DIR, id);
+    fs.mkdirSync(tmpDir, { recursive: true });
 
-    const output = path.join(DOWNLOADS_DIR, `${id}.%(ext)s`);
+    const output = path.join(tmpDir, "%(title).80s.%(ext)s");
     const proc   = spawn(YT_DLP, [...ARGS_BASE, "--output", output, url]);
     let stdout   = "";
 
@@ -58,19 +61,31 @@ function downloadRaw(url, id) {
     proc.stderr.on("data", d => logStream.write(d));
 
     proc.on("close", code => {
-      if (code !== 0) return reject(new Error(t("error.downloadFailed")));
+      if (code !== 0) {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+        return reject(new Error(t("error.downloadFailed")));
+      }
 
-      const filePath = stdout.trim().split("\n").filter(Boolean).at(-1);
-      if (!filePath || !fs.existsSync(filePath))
+      let filePath = stdout.trim().split("\n").filter(Boolean).at(-1);
+
+      if (!filePath || !fs.existsSync(filePath)) {
+        const files = fs.readdirSync(tmpDir).filter(f => !f.endsWith(".part"));
+        filePath = files.length === 1 ? path.join(tmpDir, files[0]) : null;
+      }
+
+      if (!filePath) {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
         return reject(new Error(t("error.fileNotFound")));
+      }
 
-      resolve(filePath);
+      resolve({ filePath, tmpDir });
     });
   });
 }
 
 async function convertToMp3(videoPath, id) {
-  const mp3Path = path.join(DOWNLOADS_DIR, `${id}.mp3`);
+  const tmpDir = path.join(DOWNLOADS_DIR, id);
+  const mp3Path = path.join(tmpDir, `${id}.mp3`);
 
   await execFileAsync(FFMPEG, [
     "-i", videoPath,
@@ -82,8 +97,32 @@ async function convertToMp3(videoPath, id) {
     mp3Path,
   ]);
 
-  fs.unlinkSync(videoPath); // remove intermediate video
+  fs.unlinkSync(videoPath);
   return mp3Path;
+}
+
+async function uploadToServer(filePath) {
+  const fileBuffer = fs.readFileSync(filePath);
+  const fileName = path.basename(filePath);
+
+  const formData = new FormData();
+  formData.append("file", new Blob([fileBuffer]), fileName);
+
+  const response = await fetch(UPLOAD_URL, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  if (!result.url) {
+    throw new Error("Server response missing url");
+  }
+
+  return result.url.startsWith("http") ? result.url : `http://maneos.net${result.url}`;
 }
 
 export default async function ({ msg, api }) {
@@ -102,11 +141,11 @@ export default async function ({ msg, api }) {
 
   enqueue(
     async () => {
-      const videoPath = await downloadRaw(url, id);
-      const mp3Path   = await convertToMp3(videoPath, id);
-      await api.sendAudio(mp3Path);
-      fs.unlinkSync(mp3Path);
-      emptyFolder(DOWNLOADS_DIR);
+      const { filePath, tmpDir } = await downloadRaw(url, id);
+      const mp3Path = await convertToMp3(filePath, id);
+      const downloadUrl = await uploadToServer(mp3Path);
+      await msg.reply(downloadUrl);
+      fs.rmSync(tmpDir, { recursive: true, force: true });
       api.log.info(`${CMD_PREFIX}audio completed → ${url}`);
     },
     async () => {
