@@ -9,11 +9,10 @@ const { t } = createPluginT(import.meta.url);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REGISTRATIONS_FILE = join(__dirname, "registrations.json");
 
-let apiRef  = null;
+let apiRef = null;
 let players = [];
 let registrations = {}; // whatsappId -> minecraftName
 
-// Carrega registros existentes
 if (fs.existsSync(REGISTRATIONS_FILE)) {
   try {
     registrations = JSON.parse(fs.readFileSync(REGISTRATIONS_FILE, "utf8"));
@@ -26,10 +25,77 @@ function saveRegistrations() {
   fs.writeFileSync(REGISTRATIONS_FILE, JSON.stringify(registrations, null, 2));
 }
 
+/**
+ * Resolve o Contact a partir de um ID (incluindo @lid).
+ * Retorna { id, number, name } ou null.
+ */
+async function resolveContact(rawId) {
+  try {
+    const contact = await apiRef.client.getContactById(rawId);
+    if (contact && contact.id) {
+      let serialized = contact.id._serialized;
+      let number = contact.id.user;
+      if (contact.id.server === "lid") {
+        try {
+          const pn = await apiRef.client.pupPage.evaluate((lid) => {
+            const wid = window.Store.WidFactory.createWid(lid);
+            const phone = window.Store.LidUtils.getPhoneNumber(wid);
+            return phone?._serialized || null;
+          }, serialized);
+          if (pn) {
+            serialized = pn;
+            number = pn.replace("@c.us", "");
+          }
+        } catch {
+          // LidUtils não disponível, mantém o lid
+        }
+      }
+      return {
+        id: serialized,
+        number,
+        name: contact.pushname || contact.name || number,
+      };
+    }
+  } catch { /* contact não encontrado */ }
+  return null;
+}
+
+/**
+ * Extrai menções de uma mensagem via Puppeteer (contorna wrappers do ManyBot).
+ */
+async function getMentionedContacts(msg) {
+  let rawIds = [];
+
+  try {
+    const msgId = msg.id?._serialized || msg.id;
+    const nativeMsg = await apiRef.client.pupPage.evaluate(async (id) => {
+      const m = window.Store.Msg.get(id);
+      return m ? window.WWebJS.getMessageModel(m) : null;
+    }, msgId);
+    if (nativeMsg?.mentionedIds?.length) {
+      rawIds = nativeMsg.mentionedIds;
+    }
+  } catch { /* fallback */ }
+
+  if (!rawIds.length && msg.mentionedIds?.length) {
+    rawIds = msg.mentionedIds;
+  }
+
+  const contacts = [];
+  for (const id of rawIds) {
+    const c = await resolveContact(id);
+    if (c) contacts.push(c);
+  }
+  return contacts;
+}
+
 async function isAdmin(whatsappId, chatId) {
   try {
     const chat = await apiRef.client.getChatById(chatId);
-    const participant = chat.participants.find(p => p.id._serialized === whatsappId);
+    const participant = chat.participants.find(p =>
+      p.id._serialized === whatsappId ||
+      p.id.user === whatsappId.replace(/@.*$/, "")
+    );
     return participant?.isAdmin || false;
   } catch {
     return false;
@@ -54,7 +120,7 @@ function handleLine(line) {
 }
 
 export async function setup(api) {
-  apiRef = api; // define na inicialização, sem esperar mensagem
+  apiRef = api;
 
   if (!fs.existsSync(MC_LOG_FILE)) {
     api.log.error(t("messages.logFileNotFound", { file: MC_LOG_FILE }));
@@ -83,7 +149,7 @@ export default async function ({ msg, api }) {
   const chatId = api.chat.id;
   const senderId = msg.sender;
 
-  // !mcreg <minecraft_name> [@user] - registra username (próprio ou de outro se admin)
+  // !mcreg <minecraft_name> [@user]
   if (body.startsWith(CMD_PREFIX + "mcreg")) {
     const args = body.replace(CMD_PREFIX + "mcreg", "").trim().split(/\s+/);
     if (!args[0]) {
@@ -93,37 +159,36 @@ export default async function ({ msg, api }) {
 
     const mcName = args[0];
     let targetId = senderId;
+    let targetNumber = senderId.replace(/@.*$/, "");
+    let targetName = msg.senderName;
 
-    // Get mentioned users from mentionedIds
-    const mentions = msg.mentionedIds || [];
+    const mentions = await getMentionedContacts(msg);
     if (mentions.length > 0) {
-      // Mentioning someone requires admin
       const admin = await isAdmin(senderId, chatId);
       if (!admin) {
         await msg.reply(t("messages.adminOnly"));
         return;
       }
-      targetId = mentions[0];
+      targetId = mentions[0].id;
+      targetNumber = mentions[0].number;
+      targetName = mentions[0].name;
     }
 
-    // Check if this gamertag is already registered to someone
-    const existingEntry = Object.entries(registrations).find(([wid, mc]) => mc === mcName);
+    const existingEntry = Object.entries(registrations).find(([, mc]) => mc === mcName);
     if (existingEntry) {
-      const [existingId, existingMc] = existingEntry;
+      const [existingId] = existingEntry;
       if (existingId === targetId) {
-        // Same person re-registering
         await msg.reply(t("messages.alreadyRegistered", {
-          mcName: existingMc,
-          whatsappName: targetId === senderId ? msg.senderName : `@${targetId}`
+          mcName,
+          whatsappName: targetId === senderId ? msg.senderName : `@${targetNumber}`,
         }));
+        return;
       } else {
-        // Different person - only admins can override
         const admin = await isAdmin(senderId, chatId);
         if (!admin) {
           await msg.reply(t("messages.adminOnly"));
           return;
         }
-        // Admin can override - will be handled below
       }
     }
 
@@ -133,25 +198,31 @@ export default async function ({ msg, api }) {
     if (targetId === senderId) {
       await msg.reply(t("messages.registered", { mcName, whatsappName: msg.senderName }));
     } else {
-      await msg.reply(t("messages.adminRegistered", { mcName, whatsappName: `@${targetId}` }));
+      try {
+        const chat = await apiRef.client.getChatById(chatId);
+        await chat.sendMessage(
+          t("messages.adminRegistered", { mcName, whatsappName: `@${targetNumber}` }),
+          { mentions: [targetId] }
+        );
+      } catch {
+        await msg.reply(t("messages.adminRegistered", { mcName, whatsappName: `@${targetNumber}` }));
+      }
     }
     return;
   }
 
-  // !mcunreg [@user] - desregistra (próprio ou de outro se admin)
+  // !mcunreg [@user]
   if (body.startsWith(CMD_PREFIX + "mcunreg")) {
     let targetId = senderId;
 
-    // Get mentioned users from mentionedIds
-    const mentions = msg.mentionedIds || [];
+    const mentions = await getMentionedContacts(msg);
     if (mentions.length > 0) {
-      // Mentioning someone requires admin
       const admin = await isAdmin(senderId, chatId);
       if (!admin) {
         await msg.reply(t("messages.adminOnly"));
         return;
       }
-      targetId = mentions[0];
+      targetId = mentions[0].id;
     }
 
     if (!registrations[targetId]) {
@@ -171,37 +242,101 @@ export default async function ({ msg, api }) {
     return;
   }
 
-  // !mclist - lista registros
+  // !mclist - lista com @menção real
   if (body.startsWith(CMD_PREFIX + "mclist")) {
     const entries = Object.entries(registrations);
     if (entries.length === 0) {
       await msg.reply(t("messages.noPlayers"));
       return;
     }
-    const list = entries.map(([wid, mc]) => `- ${mc} (@${wid})`).join("\n");
-    await msg.reply(t("messages.registrationsList", { count: entries.length, list }));
+
+    const resolved = await Promise.all(
+      entries.map(async ([wid, mc]) => {
+        const c = await resolveContact(wid);
+        return { wid: c?.id || wid, mc, number: c?.number || wid.replace(/@.*$/, "") };
+      })
+    );
+
+    const text = resolved.map(({ mc, number }) => `- ${mc} → @${number}`).join("\n");
+    const mentions = resolved.map(r => r.wid);
+
+    try {
+      const chat = await apiRef.client.getChatById(chatId);
+      await chat.sendMessage(
+        t("messages.registrationsList", { count: entries.length, list: text }),
+        { mentions }
+      );
+    } catch {
+      await msg.reply(t("messages.registrationsList", { count: entries.length, list: text }));
+    }
     return;
   }
 
-  // !players - mostra players online com nomes mapeados
+  // !mcwho <minecraft_name> - quem é esse player no WhatsApp
+  if (body.startsWith(CMD_PREFIX + "mcwho")) {
+    const mcName = body.replace(CMD_PREFIX + "mcwho", "").trim();
+    if (!mcName) {
+      await msg.reply(`Uso: ${CMD_PREFIX}mcwho <nick_minecraft>`);
+      return;
+    }
+
+    const entry = Object.entries(registrations).find(
+      ([, mc]) => mc.toLowerCase() === mcName.toLowerCase()
+    );
+
+    if (!entry) {
+      await msg.reply(`❌ Nenhum usuário registrado com o nick *${mcName}*.`);
+      return;
+    }
+
+    const [wid] = entry;
+    const c = await resolveContact(wid);
+    const number = c?.number || wid.replace(/@.*$/, "");
+    const name = c?.name || number;
+
+    try {
+      const chat = await apiRef.client.getChatById(chatId);
+      await chat.sendMessage(`⛏️ *${mcName}* é @${number} (${name})`, { mentions: [c?.id || wid] });
+    } catch {
+      await msg.reply(`⛏️ *${mcName}* é @${number} (${name})`);
+    }
+    return;
+  }
+
+  // !players - players online com menção real
   if (body.startsWith(CMD_PREFIX + "players")) {
     if (players.length === 0) {
       await msg.reply(t("messages.noPlayers"));
       return;
     }
 
-    // Tenta mapear players para usuários registrados
     const reverseMap = {};
     Object.entries(registrations).forEach(([wid, mc]) => {
       reverseMap[mc.toLowerCase()] = wid;
     });
 
-    const playerList = players.map(p => {
-      const wid = reverseMap[p.toLowerCase()];
-      return wid ? `- ${p} (WhatsApp: @${wid})` : `- ${p}`;
-    }).join("\n");
+    const resolvedPlayers = await Promise.all(
+      players.map(async p => {
+        const wid = reverseMap[p.toLowerCase()];
+        if (!wid) return { text: `- ${p}`, wid: null };
+        const c = await resolveContact(wid);
+        const number = c?.number || wid.replace(/@.*$/, "");
+        return { text: `- ${p} (@${number})`, wid: c?.id || wid };
+      })
+    );
 
-    await msg.reply(t("messages.playersList", { count: players.length, list: playerList }));
+    const list = resolvedPlayers.map(r => r.text).join("\n");
+    const mentions = resolvedPlayers.map(r => r.wid).filter(Boolean);
+
+    try {
+      const chat = await apiRef.client.getChatById(chatId);
+      await chat.sendMessage(
+        t("messages.playersList", { count: players.length, list }),
+        { mentions }
+      );
+    } catch {
+      await msg.reply(t("messages.playersList", { count: players.length, list }));
+    }
     return;
   }
 }
