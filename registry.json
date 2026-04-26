@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-04-26T03:08:06.286Z",
+  "lastUpdated": "2026-04-26T04:03:32.716Z",
   "plugins": {
     "a": {
       "name": "a",
@@ -37,7 +37,7 @@
     "figurinha": {
       "name": "figurinha",
       "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "category": "media",
       "service": false,
       "dependencies": {
