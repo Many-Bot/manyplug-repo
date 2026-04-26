@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-04-21T17:11:11.742Z",
+  "lastUpdated": "2026-04-26T02:38:10.361Z",
   "plugins": {
     "a": {
       "name": "a",
@@ -84,6 +84,27 @@
       "category": "fun",
       "service": false,
       "dependencies": {}
+    },
+    "admin-user": {
+      "name": "admin-user",
+      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
+      "version": "1.0.0",
+      "category": "utility",
+      "service": false,
+      "dependencies": {}
+    },
+    "many-ai": {
+      "name": "many-ai",
+      "version": "1.0.0",
+      "description": "Chat with an AI model through Groq API!",
+      "category": "utility",
+      "service": false,
+      "author": "",
+      "license": "MIT",
+      "main": "index.js",
+      "dependencies": {
+        "sqlite3": "^5.1.7"
+      }
     }
   }
 }
