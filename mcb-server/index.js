@@ -94,16 +94,16 @@ export default async function ({ msg, api }) {
     const mcName = args[0];
     let targetId = senderId;
 
-    // Get mentioned users using the proper API
-    const mentions = await msg.getMentions();
-    if (mentions && mentions.length > 0) {
+    // Get mentioned users from mentionedIds
+    const mentions = msg.mentionedIds || [];
+    if (mentions.length > 0) {
       // Mentioning someone requires admin
       const admin = await isAdmin(senderId, chatId);
       if (!admin) {
         await msg.reply(t("messages.adminOnly"));
         return;
       }
-      targetId = mentions[0].id._serialized;
+      targetId = mentions[0];
     }
 
     // Check if this gamertag is already registered to someone
@@ -142,16 +142,16 @@ export default async function ({ msg, api }) {
   if (body.startsWith(CMD_PREFIX + "mcunreg")) {
     let targetId = senderId;
 
-    // Get mentioned users using the proper API
-    const mentions = await msg.getMentions();
-    if (mentions && mentions.length > 0) {
+    // Get mentioned users from mentionedIds
+    const mentions = msg.mentionedIds || [];
+    if (mentions.length > 0) {
       // Mentioning someone requires admin
       const admin = await isAdmin(senderId, chatId);
       if (!admin) {
         await msg.reply(t("messages.adminOnly"));
         return;
       }
-      targetId = mentions[0].id._serialized;
+      targetId = mentions[0];
     }
 
     if (!registrations[targetId]) {
@@ -205,4 +205,3 @@ export default async function ({ msg, api }) {
     return;
   }
 }
-
