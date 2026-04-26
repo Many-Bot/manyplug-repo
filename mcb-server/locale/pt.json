@@ -1,0 +1,24 @@
+{
+  "plugin": {
+    "name": "mcb-server",
+    "description": "Mostra quando alguém entra no seu servidor Minecraft"
+  },
+  "messages": {
+    "playerConnected": "⛏️ *{{name}}* conectou-se ao Minecraft!",
+    "playerDisconnected": "👋 *{{name}}* desconectou-se do Minecraft!",
+    "logFileNotFound": "[MCB] arquivo não encontrado: {{file}}",
+    "streamError": "[MCB] erro stream: {{error}}",
+    "watcherActive": "[MCB] watcher ativo em {{file}}",
+    "noPlayers": "*Nenhum player jogando Minecraft no momento*",
+    "playersList": "*Players jogando Minecraft atualmente: {{count}}*\n{{list}}",
+    "registered": "✅ {{mcName}} registrado como {{whatsappName}}!",
+    "unregistered": "✅ {{mcName}} desregistrado!",
+    "notRegistered": "❌ {{mcName}} não está registrado",
+    "alreadyRegistered": "❌ {{mcName}} já está registrado como {{whatsappName}}",
+    "noNameProvided": "❌ Uso: !mcreg <seu_username_minecraft>",
+    "registrationsList": "*Usuários registrados: {{count}}*\n{{list}}",
+    "adminRegistered": "✅ {{mcName}} registrado para {{whatsappName}} (por admin)!",
+    "adminUnregistered": "✅ {{mcName}} desregistrado (por admin)!",
+    "adminOnly": "❌ Apenas administradores podem usar este comando"
+  }
+}
