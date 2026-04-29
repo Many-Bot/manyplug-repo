@@ -23,29 +23,9 @@ It is also possible for this agent to perform internet searches; for this, you n
     - Click on "Create New Key".
     - Copy and paste into "SERPER_API_KEY".
 
-Now you need to get your WhatsApp ID, so people can mention ManyBot and it will answer using AI. To do this, just execute in your ManyBot (^3.0.1) root:
-
-```
-$ node src/utils/get_id.js me
-```
-
-Scan the QR Code and wait, you will see something like this:
-
-```
-────────────────────────────────────────────────
-Name:   Me
-Number: 5566999999999
-ID:     5566999999999@c.us
-LID:    91234567890123@lid
-────────────────────────────────────────────────
-```
-
-Copy the LID code (without the @lid) and paste on "MANYAI_LID".
 
 manybot.conf should look like this:
 ```
-MANYAI_LID=91234567890123
-
 GROQ_API_KEY=gsk_...
 TAVILY_API_KEY=tvly-dev-...
 SERPER_API_KEY=abc1234...
@@ -57,14 +37,11 @@ many-ai,
 
 ## How to use
 
-On any chat, everyone that mention your contact will be automatically answered by the AI.
+On any chat, everyone that send "<prefix>ai <prompt>" will be automatically answered by the AI.
 
 Like:
 ```
-> @ManyBot search me the news?
+> !ai search me the news?
 < A portal to Equestria has been found today in Xique-Xique Bahia, in Brazil.
 ```
 
-## License
-
-MIT

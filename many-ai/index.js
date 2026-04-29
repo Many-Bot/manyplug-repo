@@ -1,21 +1,16 @@
 // src/plugins/many-ai/index.js
-// Plugin-serviço: roda em background, Many decide quando responder.
-// Requer no manybot.conf:
-//   GROQ_API_KEY=gsk_...
-//   TAVILY_API_KEY=tvly-...      (opcional)
-//   SERPER_API_KEY=...           (opcional)
+// ManyBot AI plugin — responde, pesquisa e gerencia memória
 
 import { CMD_PREFIX, CONFIG } from "../../config.js";
 import { createPluginI18n } from "../../utils/pluginI18n.js";
 
 const { t } = createPluginI18n(import.meta.url);
 
-const { GROQ_API_KEY, TAVILY_API_KEY, SERPER_API_KEY, MANYAI_LID, LANGUAGE = "pt" } = CONFIG;
+const { GROQ_API_KEY, TAVILY_API_KEY, SERPER_API_KEY, LANGUAGE = "pt" } = CONFIG;
 import { doSearch } from "./search.js";
 import { memRead, memWrite, initMemory } from "./memory.js";
 import { buildSystemPrompt } from "./prompt.js";
 
-// Histórico por chat — Map<chatId, Message[]>
 const histories = new Map();
 
 const MAX_HISTORY = 20;
@@ -60,8 +55,6 @@ async function callGroq(history, systemPrompt) {
   return data.choices[0].message.content.trim();
 }
 
-// Processa a resposta do modelo — pode emitir commands ou MSG:"..."
-// Retorna { type: "msg"|"command"|"silent", value?, command?, arg? }
 function parseReply(reply, api) {
   const searchMatch = reply.match(/^SEARCH\((.+)\)$/);
   if (searchMatch) {
@@ -93,12 +86,11 @@ function parseReply(reply, api) {
   return { type: "silent" };
 }
 
-// Loop de resolução: modelo → command → OUT: → modelo → ... → MSG:"..."
-async function resolveReply(chatId, history, systemPrompt, api, maxIterations = 5) {
+async function resolveReply(history, systemPrompt, api, maxIterations = 5) {
   api.log.info(t("logs.historyStart", { count: history.length }));
   for (let i = 0; i < maxIterations; i++) {
     const raw = await callGroq(history, systemPrompt);
-    api.log.debug(t("logs.groqResponse", raw.substring(0, 100)));
+    api.log.info(t("logs.groqResponse", raw.substring(0, 100)));
     history.push({ role: "assistant", content: raw });
     trimHistory(history);
 
@@ -147,67 +139,30 @@ async function resolveReply(chatId, history, systemPrompt, api, maxIterations = 
 }
 
 async function shouldRespond(msg, api) {
-  if (msg.fromMe) return false;
-
-  const body = msg.body || "";
-  if (body.trim().startsWith(CMD_PREFIX)) return false;
-
-  const botId = MANYAI_LID;
-  if (!botId) {
-    api.log.debug(t("logs.shouldRespond.noBotId"));
-    return false;
-  }
-
-  if (!api.chat.isGroup) {
-    api.log.debug(t("logs.shouldRespond.privateChat"));
-    return true;
-  }
-
-  const lowerBody = body.toLowerCase();
-
-  const mentioned = Array.isArray(msg.mentionedIds) && msg.mentionedIds.includes(botId);
-  if (mentioned) {
-    api.log.debug(t("logs.shouldRespond.mention"));
-    return true;
-  }
-
-  if (msg.reply_to_message?.author?.id === botId) {
-    api.log.debug(t("logs.shouldRespond.replyToMessage"));
-    return true;
-  }
-
-  if (body.includes(`@${botId}`)) {
-    api.log.debug(t("logs.shouldRespond.atIdInText"));
+  if (msg.is(CMD_PREFIX + "ai")) {
+    api.log.info(t("logs.shouldRespond.mention"));
     return true;
   }
 
   if (msg.hasQuotedMsg) {
     try {
+      const botid = api.client.info.wid._serialized;
       const quoted = await msg.getQuotedMessage();
-      if (quoted?.from === botId) {
-        api.log.debug(t("logs.shouldRespond.quotedMessage"));
+      const sender = quoted.author || quoted.from;
+      if (sender === botid) {
+        api.log.info(t("logs.shouldRespond.quotedMessage"));
         return true;
-      } else {
-        api.log.debug(t("logs.shouldRespond.quotedMessageOther"));
       }
     } catch (err) {
-      api.log.debug(t("logs.shouldRespond.quotedError"));
+      api.log.info(t("logs.shouldRespond.quotedError"));
     }
   }
 
-  const triggerPhrases = [`@${botId}`];
-  const matchedTrigger = triggerPhrases.find(p => lowerBody.includes(p));
-  if (matchedTrigger) {
-    api.log.debug(t("logs.shouldRespond.triggerPhrase", { phrase: matchedTrigger }));
-    return true;
-  }
-
-  api.log.debug(t("logs.shouldRespond.noCondition"));
   return false;
 }
 
 export default async function ({ msg, api }) {
-  if (msg.fromMe) return;
+  //if (msg.fromMe) return;
 
   initMemory(api);
 
@@ -215,7 +170,6 @@ export default async function ({ msg, api }) {
   const history = getHistory(chatId);
   const now = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 15);
 
-  // Check for media types the bot can't handle
   const mediaTypes = ["img", "sticker", "audio", "video", "document", "voice", "gif"];
   const msgType = (msg.type || "").toLowerCase();
   if (mediaTypes.includes(msgType)) {
@@ -230,7 +184,7 @@ export default async function ({ msg, api }) {
   if (body.trim().startsWith(CMD_PREFIX)) {
     const formatted = `command|${msg.senderName}|${now}|${body}`;
     history.push({ role: "system", content: formatted });
-    api.log.debug(t("logs.commandAdded", { cmd: body.substring(0, 30) }));
+    api.log.info(t("logs.commandAdded", { cmd: body.substring(0, 30) }));
   } else {
     const chatType = api.chat.isGroup ? "group" : "private";
     const formatted = `${chatType}|member|${msg.senderName}|${now}|${body}`;
@@ -238,14 +192,14 @@ export default async function ({ msg, api }) {
   }
   trimHistory(history);
 
-  api.log.debug(t("logs.historyLength", { chatId, count: history.length }));
+  api.log.info(t("logs.historyLength", { chatId, count: history.length }));
 
   if (!(await shouldRespond(msg, api))) return;
 
   const systemPrompt = buildSystemPrompt(LANGUAGE);
 
   try {
-    const reply = await resolveReply(chatId, history, systemPrompt, api);
+    const reply = await resolveReply(history, systemPrompt, api);
     if (reply) await msg.reply(reply);
   } catch (err) {
     api.log.error(`[many-ai] erro: ${err.message}`);
