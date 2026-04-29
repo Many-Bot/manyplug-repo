@@ -1,8 +1,0 @@
-{
-  "title": "🤖 ManyBot — Available Commands",
-  "video": "Download video from URL",
-  "audio": "Download audio (mp3) from URL",
-  "sticker": "Convert image/video to sticker",
-  "guess": "Guessing game (number 1-100)",
-  "hangman": "Hangman game"
-}
