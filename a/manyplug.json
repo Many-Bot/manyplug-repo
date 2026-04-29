@@ -1,8 +1,0 @@
-{
-	"name": "a",
-	"author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
-	"version": "1.0.0",
-	"category": "fun",
-	"service": false,
-	"dependencies": {}
-}
