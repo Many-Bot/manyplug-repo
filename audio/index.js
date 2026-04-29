@@ -27,20 +27,31 @@ const UPLOAD_URL = "https://maneos.net/upload";
 
 const execFileAsync = promisify(execFile);
 
-const ARGS_BASE = [
-  "--extractor-args",     "youtube:player_client=android",
-  "--print",              "after_move:filepath",
-  "--cookies",            "cookies.txt",
-  "--add-header",         "User-Agent:Mozilla/5.0",
-  "--add-header",         "Referer:https://www.youtube.com/",
-  "--retries",            "4",
-  "--fragment-retries",   "5",
-  "--socket-timeout",     "15",
-  "--sleep-interval",     "1",
-  "--max-sleep-interval", "4",
-  "--no-playlist",
-  "-f", "bv+ba/best",
-];
+function getArgsForUrl(url) {
+  const isYouTube = url.includes("youtube.com") || url.includes("youtu.be");
+  const args = [
+    "--print",              "after_move:filepath",
+    "--cookies",            "cookies.txt",
+    "--add-header",         "User-Agent:Mozilla/5.0",
+    "--retries",            "4",
+    "--fragment-retries",   "5",
+    "--socket-timeout",     "15",
+    "--sleep-interval",     "1",
+    "--max-sleep-interval", "4",
+    "--no-playlist",
+    "-f", "bv+ba/best",
+  ];
+
+  // YouTube-specific args (can cause issues on other sites)
+  if (isYouTube) {
+    args.push(
+      "--extractor-args", "youtube:player_client=android",
+      "--add-header",     "Referer:https://www.youtube.com/",
+    );
+  }
+
+  return args;
+}
 
 function downloadRaw(url, id) {
   return new Promise((resolve, reject) => {
@@ -48,22 +59,43 @@ function downloadRaw(url, id) {
     fs.mkdirSync(tmpDir, { recursive: true });
 
     const output = path.join(tmpDir, "%(title).80s.%(ext)s");
-    const proc   = spawn(YT_DLP, [...ARGS_BASE, "--output", output, url]);
-    let stdout   = "";
+    const args = getArgsForUrl(url);
+    const proc = spawn(YT_DLP, [...args, "--output", output, url]);
+    let stdout = "";
+    let stderr = "";
 
-    proc.on("error", err => reject(new Error(
-      err.code === "EACCES" ? t("error.noPermission")
-      : err.code === "ENOENT" ? t("error.notFound")
-      : `${t("error.startError")} ${err.message}`
-    )));
+    console.log(`[audio] Downloading: ${url}`);
+    console.log(`[audio] yt-dlp args: ${args.join(" ")}`);
 
-    proc.stdout.on("data", d => { stdout += d.toString(); });
-    proc.stderr.on("data", d => logStream.write(d));
+    proc.on("error", err => {
+      const msg = err.code === "EACCES" ? t("error.noPermission")
+        : err.code === "ENOENT" ? t("error.notFound")
+        : `${t("error.startError")} ${err.message}`;
+      console.error(`[audio] Spawn error: ${err.message}`);
+      reject(new Error(msg));
+    });
+
+    proc.stdout.on("data", d => {
+      const text = d.toString();
+      stdout += text;
+      console.log(`[audio] ${text.trim()}`);
+    });
+
+    proc.stderr.on("data", d => {
+      const text = d.toString();
+      stderr += text;
+      logStream.write(text);
+      console.error(`[audio] ${text.trim()}`);
+    });
 
     proc.on("close", code => {
+      console.log(`[audio] yt-dlp exited with code ${code}`);
+
       if (code !== 0) {
         fs.rmSync(tmpDir, { recursive: true, force: true });
-        return reject(new Error(t("error.downloadFailed")));
+        const lastStderr = stderr.split("\n").slice(-5).join("\n");
+        console.error(`[audio] Download failed. Last stderr:\n${lastStderr}`);
+        return reject(new Error(`${t("error.downloadFailed")} (exit code ${code})`));
       }
 
       let filePath = stdout.trim().split("\n").filter(Boolean).at(-1);
@@ -75,9 +107,11 @@ function downloadRaw(url, id) {
 
       if (!filePath) {
         fs.rmSync(tmpDir, { recursive: true, force: true });
+        console.error(`[audio] File not found. stdout was:\n${stdout}`);
         return reject(new Error(t("error.fileNotFound")));
       }
 
+      console.log(`[audio] Downloaded to: ${filePath}`);
       resolve({ filePath, tmpDir });
     });
   });
@@ -87,23 +121,35 @@ async function convertToMp3(videoPath, id) {
   const tmpDir = path.join(DOWNLOADS_DIR, id);
   const mp3Path = path.join(tmpDir, `${id}.mp3`);
 
-  await execFileAsync(FFMPEG, [
-    "-i", videoPath,
-    "-vn",          // no video
-    "-ar", "44100", // sample rate
-    "-ac", "2",     // stereo
-    "-b:a", "192k", // bitrate
-    "-y",           // overwrite if exists
-    mp3Path,
-  ]);
+  console.log(`[audio] Converting to MP3: ${videoPath}`);
+
+  try {
+    const { stdout, stderr } = await execFileAsync(FFMPEG, [
+      "-i", videoPath,
+      "-vn",          // no video
+      "-ar", "44100", // sample rate
+      "-ac", "2",     // stereo
+      "-b:a", "192k", // bitrate
+      "-y",           // overwrite if exists
+      mp3Path,
+    ]);
+    console.log(`[audio] ffmpeg stdout: ${stdout}`);
+    if (stderr) console.log(`[audio] ffmpeg stderr: ${stderr}`);
+  } catch (err) {
+    console.error(`[audio] ffmpeg error: ${err.message}`);
+    throw err;
+  }
 
   fs.unlinkSync(videoPath);
+  console.log(`[audio] Converted to: ${mp3Path}`);
   return mp3Path;
 }
 
 async function uploadToServer(filePath) {
   const fileBuffer = fs.readFileSync(filePath);
   const fileName = path.basename(filePath);
+
+  console.log(`[audio] Uploading: ${fileName} (${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
 
   const formData = new FormData();
   formData.append("file", new Blob([fileBuffer]), fileName);
@@ -113,16 +159,30 @@ async function uploadToServer(filePath) {
     body: formData,
   });
 
+  const responseText = await response.text();
+  console.log(`[audio] Upload response: ${response.status} ${response.statusText}`);
+
   if (!response.ok) {
+    console.error(`[audio] Upload failed: ${response.status} - ${responseText}`);
     throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
   }
 
-  const result = await response.json();
+  let result;
+  try {
+    result = JSON.parse(responseText);
+  } catch (err) {
+    console.error(`[audio] Failed to parse upload response: ${responseText}`);
+    throw new Error(`Server response not JSON: ${responseText.slice(0, 200)}`);
+  }
+
   if (!result.url) {
+    console.error(`[audio] Server response missing url: ${JSON.stringify(result)}`);
     throw new Error("Server response missing url");
   }
 
-  return result.url.startsWith("https") ? result.url : `https://maneos.net${result.url}`;
+  const finalUrl = result.url.startsWith("https") ? result.url : `https://maneos.net${result.url}`;
+  console.log(`[audio] Upload complete: ${finalUrl}`);
+  return finalUrl;
 }
 
 export default async function ({ msg, api }) {
@@ -141,12 +201,18 @@ export default async function ({ msg, api }) {
 
   enqueue(
     async () => {
-      const { filePath, tmpDir } = await downloadRaw(url, id);
-      const mp3Path = await convertToMp3(filePath, id);
-      const downloadUrl = await uploadToServer(mp3Path);
-      await msg.reply(downloadUrl);
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-      api.log.info(`${CMD_PREFIX}audio completed → ${url}`);
+      try {
+        const { filePath, tmpDir } = await downloadRaw(url, id);
+        const mp3Path = await convertToMp3(filePath, id);
+        const downloadUrl = await uploadToServer(mp3Path);
+        await msg.reply(downloadUrl);
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+        api.log.info(`${CMD_PREFIX}audio completed → ${url}`);
+      } catch (err) {
+        console.error(`[audio] Task error: ${err.message}`);
+        await msg.reply(`${t("error.generic")}\n\`${err.message}\``);
+        throw err;
+      }
     },
     async () => {
       await msg.reply(t("error.generic"));

@@ -22,20 +22,31 @@ const DOWNLOADS_DIR = path.resolve("downloads");
 const YT_DLP = "yt-dlp";
 const UPLOAD_URL = "https://maneos.net/upload";
 
-const ARGS_BASE = [
-  "--extractor-args",     "youtube:player_client=android",
-  "--print",              "after_move:filepath",
-  "--cookies",            "cookies.txt",
-  "--add-header",         "User-Agent:Mozilla/5.0",
-  "--add-header",         "Referer:https://www.youtube.com/",
-  "--retries",            "4",
-  "--fragment-retries",   "5",
-  "--socket-timeout",     "15",
-  "--sleep-interval",     "1",
-  "--max-sleep-interval", "4",
-  "--no-playlist",
-  "-f", "bv+ba/best",
-];
+function getArgsForUrl(url) {
+  const isYouTube = url.includes("youtube.com") || url.includes("youtu.be");
+  const args = [
+    "--print",              "after_move:filepath",
+    "--cookies",            "cookies.txt",
+    "--add-header",         "User-Agent:Mozilla/5.0",
+    "--retries",            "4",
+    "--fragment-retries",   "5",
+    "--socket-timeout",     "15",
+    "--sleep-interval",     "1",
+    "--max-sleep-interval", "4",
+    "--no-playlist",
+    "-f", "bv+ba/best",
+  ];
+
+  // YouTube-specific args (can cause issues on other sites)
+  if (isYouTube) {
+    args.push(
+      "--extractor-args", "youtube:player_client=android",
+      "--add-header",     "Referer:https://www.youtube.com/",
+    );
+  }
+
+  return args;
+}
 
 function downloadVideo(url, id) {
   return new Promise((resolve, reject) => {
@@ -43,22 +54,43 @@ function downloadVideo(url, id) {
     fs.mkdirSync(tmpDir, { recursive: true });
 
     const output = path.join(tmpDir, "%(title).80s.%(ext)s");
-    const proc   = spawn(YT_DLP, [...ARGS_BASE, "--output", output, url]);
-    let stdout   = "";
+    const args = getArgsForUrl(url);
+    const proc = spawn(YT_DLP, [...args, "--output", output, url]);
+    let stdout = "";
+    let stderr = "";
 
-    proc.on("error", err => reject(new Error(
-      err.code === "EACCES" ? t("error.noPermission")
-      : err.code === "ENOENT" ? t("error.notFound")
-      : `${t("error.startError")} ${err.message}`
-    )));
+    console.log(`[video] Downloading: ${url}`);
+    console.log(`[video] yt-dlp args: ${args.join(" ")}`);
 
-    proc.stdout.on("data", d => { stdout += d.toString(); });
-    proc.stderr.on("data", d => logStream.write(d));
+    proc.on("error", err => {
+      const msg = err.code === "EACCES" ? t("error.noPermission")
+        : err.code === "ENOENT" ? t("error.notFound")
+        : `${t("error.startError")} ${err.message}`;
+      console.error(`[video] Spawn error: ${err.message}`);
+      reject(new Error(msg));
+    });
+
+    proc.stdout.on("data", d => {
+      const text = d.toString();
+      stdout += text;
+      console.log(`[video] ${text.trim()}`);
+    });
+
+    proc.stderr.on("data", d => {
+      const text = d.toString();
+      stderr += text;
+      logStream.write(text);
+      console.error(`[video] ${text.trim()}`);
+    });
 
     proc.on("close", code => {
+      console.log(`[video] yt-dlp exited with code ${code}`);
+
       if (code !== 0) {
         fs.rmSync(tmpDir, { recursive: true, force: true });
-        return reject(new Error(t("error.downloadFailed")));
+        const lastStderr = stderr.split("\n").slice(-5).join("\n");
+        console.error(`[video] Download failed. Last stderr:\n${lastStderr}`);
+        return reject(new Error(`${t("error.downloadFailed")} (exit code ${code})`));
       }
 
       let filePath = stdout.trim().split("\n").filter(Boolean).at(-1);
@@ -70,9 +102,11 @@ function downloadVideo(url, id) {
 
       if (!filePath) {
         fs.rmSync(tmpDir, { recursive: true, force: true });
+        console.error(`[video] File not found. stdout was:\n${stdout}`);
         return reject(new Error(t("error.fileNotFound")));
       }
 
+      console.log(`[video] Downloaded to: ${filePath}`);
       resolve({ filePath, tmpDir });
     });
   });
@@ -82,6 +116,8 @@ async function uploadToServer(filePath) {
   const fileBuffer = fs.readFileSync(filePath);
   const fileName = path.basename(filePath);
 
+  console.log(`[video] Uploading: ${fileName} (${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
+
   const formData = new FormData();
   formData.append("file", new Blob([fileBuffer]), fileName);
 
@@ -90,16 +126,30 @@ async function uploadToServer(filePath) {
     body: formData,
   });
 
+  const responseText = await response.text();
+  console.log(`[video] Upload response: ${response.status} ${response.statusText}`);
+
   if (!response.ok) {
+    console.error(`[video] Upload failed: ${response.status} - ${responseText}`);
     throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
   }
 
-  const result = await response.json();
+  let result;
+  try {
+    result = JSON.parse(responseText);
+  } catch (err) {
+    console.error(`[video] Failed to parse upload response: ${responseText}`);
+    throw new Error(`Server response not JSON: ${responseText.slice(0, 200)}`);
+  }
+
   if (!result.url) {
+    console.error(`[video] Server response missing url: ${JSON.stringify(result)}`);
     throw new Error("Server response missing url");
   }
 
-  return result.url.startsWith("https") ? result.url : `https://maneos.net${result.url}`;
+  const finalUrl = result.url.startsWith("https") ? result.url : `https://maneos.net${result.url}`;
+  console.log(`[video] Upload complete: ${finalUrl}`);
+  return finalUrl;
 }
 
 export default async function ({ msg, api }) {
@@ -118,11 +168,17 @@ export default async function ({ msg, api }) {
 
   enqueue(
     async () => {
-      const { filePath, tmpDir } = await downloadVideo(url, id);
-      const downloadUrl = await uploadToServer(filePath);
-      await msg.reply(downloadUrl);
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-      api.log.info(`${CMD_PREFIX}video completed → ${url}`);
+      try {
+        const { filePath, tmpDir } = await downloadVideo(url, id);
+        const downloadUrl = await uploadToServer(filePath);
+        await msg.reply(downloadUrl);
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+        api.log.info(`${CMD_PREFIX}video completed → ${url}`);
+      } catch (err) {
+        console.error(`[video] Task error: ${err.message}`);
+        await msg.reply(`${t("error.generic")}\n\`${err.message}\``);
+        throw err;
+      }
     },
     async () => {
       await msg.reply(t("error.generic"));
