@@ -11,7 +11,6 @@
 
 import fs            from "fs";
 import path          from "path";
-import os            from "os";
 import { execFile }  from "child_process";
 import { promisify } from "util";
 
@@ -29,9 +28,6 @@ const FFMPEG           = "ffmpeg";
 const MAX_STICKER_SIZE = 900 * 1024;
 const SESSION_TIMEOUT  = 2 * 60 * 1000;
 const MAX_MEDIA        = 30;
-
-const getHelp = () =>
-  `${t("help")} \`${CMD_PREFIX}figurinha\` ${t("helpMedia")} \`${CMD_PREFIX}figurinha\` ${t("helpSession")} \`${CMD_PREFIX}figurinha criar\` ${t("helpCreate")}`;
 
 // ── Internal state ───────────────────────────────────────────
 // { chatId → { author, medias[], timeout } }
@@ -154,7 +150,7 @@ export default async function ({ msg, api }) {
   if (sub === "parar") {
     const session = sessions.get(chatId);
     if (!session) {
-      await msg.reply(`${t("session.noneActive")}\n\n${getHelp()}`);
+      await msg.reply(`${t("session.noneActive")}`);
       return;
     }
     clearTimeout(session.timeout);
@@ -170,11 +166,11 @@ export default async function ({ msg, api }) {
     const session = sessions.get(chatId);
 
     if (!session) {
-      await msg.reply(`${t("session.noneActive")}\n\n${getHelp()}`);
+      await msg.reply(`${t("session.noneActive")}`);
       return;
     }
     if (!session.medias.length) {
-      await msg.reply(`${t("session.noMedia")}\n\n${getHelp()}`);
+      await msg.reply(`${t("session.noMedia")}`);
       return;
     }
 
@@ -246,5 +242,5 @@ export default async function ({ msg, api }) {
   }, SESSION_TIMEOUT);
 
   sessions.set(chatId, { author: msg.sender, medias: [], timeout });
-  await msg.reply(`${t("session.started")} *${msg.senderName}*!\n\n${getHelp()}`);
+  await msg.reply(`${t("session.started")} *${msg.senderName}*!`);
 }
