@@ -1,10 +1,6 @@
 {
   "pack": "Creado por ManyBot\n",
   "author": "\ngit.maneos.net/manybot",
-  "help": "Convierte imágenes/videos en stickers.",
-  "helpMedia": "Responde o adjunta una imagen/video con",
-  "helpSession": "O inicia una sesión multi-media con",
-  "helpCreate": "para procesar todo de una vez.",
   "error": {
     "tooLarge": "No se pudo reducir el sticker debajo de 900KB.",
     "generic": "Error al crear sticker. Intenta con otro archivo."

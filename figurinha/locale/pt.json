@@ -1,10 +1,6 @@
 {
   "pack": "Criada por ManyBot\n",
   "author": "\ngit.maneos.net/manybot",
-  "help": "Converte imagens/vídeos em figurinhas.",
-  "helpMedia": "Responda ou anexe uma imagem/vídeo com",
-  "helpSession": "Ou inicie uma sessão multi-mídia com",
-  "helpCreate": "para processar tudo de uma vez.",
   "error": {
     "tooLarge": "Não foi possível reduzir figurinha abaixo de 900KB.",
     "generic": "Falha ao criar figurinha. Tente outro arquivo."
