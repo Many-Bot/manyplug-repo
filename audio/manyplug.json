@@ -1,7 +1,7 @@
 {
     "name": "audio",
     "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
-    "version": "2.2.0",
+    "version": "2.2.1",
     "category": "media",
     "service": false,
     "externalDependencies": {

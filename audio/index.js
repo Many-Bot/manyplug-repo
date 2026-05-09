@@ -23,7 +23,7 @@ logStream.on("error", err => console.error("[logStream]", err));
 const DOWNLOADS_DIR = path.resolve("downloads");
 const YT_DLP = "yt-dlp";
 const FFMPEG = "ffmpeg";
-const UPLOAD_URL = "https://maneos.net/upload";
+const UPLOAD_URL = "https://api.stxerr.dev/upload";
 
 const execFileAsync = promisify(execFile);
 
@@ -180,7 +180,7 @@ async function uploadToServer(filePath) {
     throw new Error("Server response missing url");
   }
 
-  const finalUrl = result.url.startsWith("https") ? result.url : `https://maneos.net${result.url}`;
+  const finalUrl = result.url.startsWith("https") ? result.url : `https://api.stxerr.dev${result.url}`;
   console.log(`[audio] Upload complete: ${finalUrl}`);
   return finalUrl;
 }
