@@ -1,6 +1,6 @@
 {
-  "pack": "Creado por ManyBot\n",
-  "author": "\ngit.maneos.net/manybot",
+  "pack": "Sticker gerada por ManyBot\n",
+  "author": "\nmanybot.stxerr.dev",
   "error": {
     "tooLarge": "No se pudo reducir el sticker debajo de 900KB.",
     "generic": "Error al crear sticker. Intenta con otro archivo."
