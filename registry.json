@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-04-29T21:11:39.150Z",
+  "lastUpdated": "2026-05-14T21:28:09.428Z",
   "plugins": {
     "adivinhacao": {
       "name": "adivinhacao",
@@ -12,7 +12,7 @@
     "audio": {
       "name": "audio",
       "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
-      "version": "2.2.0",
+      "version": "2.2.1",
       "category": "media",
       "service": false,
       "externalDependencies": {
@@ -29,7 +29,7 @@
     "figurinha": {
       "name": "figurinha",
       "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "category": "media",
       "service": false,
       "dependencies": {
@@ -47,7 +47,7 @@
     "video": {
       "name": "video",
       "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
-      "version": "2.2.0",
+      "version": "2.2.1",
       "category": "media",
       "service": false,
       "externalDependencies": {
