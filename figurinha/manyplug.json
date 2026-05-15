@@ -1,7 +1,7 @@
 {
     "name": "figurinha",
 	  "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "category": "media",
     "service": false,
     "dependencies": {
