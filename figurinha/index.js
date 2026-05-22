@@ -11,6 +11,7 @@
 
 import fs            from "fs";
 import path          from "path";
+import os            from "os";
 import { execFile }  from "child_process";
 import { promisify } from "util";
 
@@ -84,7 +85,7 @@ async function processarUmaMedia(media, isGif, api, msg) {
 
   const id          = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const inputPath   = path.join(DOWNLOADS_DIR, `${id}.${ext}`);
-  const gifPath     = path.join(DOWNLOADS_DIR, `${id}.gif`);
+  const gifPath = path.join(DOWNLOADS_DIR, `${id}-animated.gif`);
   const resizedPath = path.join(DOWNLOADS_DIR, `${id}-scaled.${ext}`);
 
   try {
@@ -144,13 +145,13 @@ export default async function ({ msg, api }) {
     }
     return;
   }
-  
+
   const sub = msg.args[1];
   // ── figurinha parar ──────────────────────────────────────
   if (sub === "parar") {
     const session = sessions.get(chatId);
     if (!session) {
-      await msg.reply(`${t("session.noneActive")}`);
+      await msg.reply(t("session.noneActive"));
       return;
     }
     clearTimeout(session.timeout);
@@ -166,11 +167,11 @@ export default async function ({ msg, api }) {
     const session = sessions.get(chatId);
 
     if (!session) {
-      await msg.reply(`${t("session.noneActive")}`);
+      await msg.reply(t("session.noneActive"));
       return;
     }
     if (!session.medias.length) {
-      await msg.reply(`${t("session.noMedia")}`);
+      await msg.reply(t("session.noMedia"));
       return;
     }
 
