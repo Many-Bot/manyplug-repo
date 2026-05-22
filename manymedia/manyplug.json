@@ -1,0 +1,17 @@
+{
+    "name": "manymedia",
+    "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
+    "version": "1.0.0",
+    "category": "media",
+    "service": false,
+    "externalDependencies": {
+      "yt-dlp": {
+        "command": "yt-dlp",
+        "optional": false
+      },
+      "ffmpeg": {
+        "command": "ffmpeg",
+        "optional": false
+      }
+    }
+}
