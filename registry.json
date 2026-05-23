@@ -1,35 +1,18 @@
 {
-  "lastUpdated": "2026-05-14T21:28:09.428Z",
+  "lastUpdated": "2026-05-23T16:38:37.093Z",
   "plugins": {
     "adivinhacao": {
       "name": "adivinhacao",
-      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
+      "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
       "version": "1.0.0",
       "category": "games",
       "service": false,
       "dependencies": {}
     },
-    "audio": {
-      "name": "audio",
-      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
-      "version": "2.2.1",
-      "category": "media",
-      "service": false,
-      "externalDependencies": {
-        "yt-dlp": {
-          "command": "yt-dlp",
-          "optional": false
-        },
-        "ffmpeg": {
-          "command": "ffmpeg",
-          "optional": false
-        }
-      }
-    },
     "figurinha": {
       "name": "figurinha",
-      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
-      "version": "1.1.2",
+      "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
+      "version": "1.2.1",
       "category": "media",
       "service": false,
       "dependencies": {
@@ -38,28 +21,11 @@
     },
     "forca": {
       "name": "forca",
-      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
+      "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
       "version": "1.0.0",
       "category": "games",
       "service": false,
       "dependencies": {}
-    },
-    "video": {
-      "name": "video",
-      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
-      "version": "2.2.1",
-      "category": "media",
-      "service": false,
-      "externalDependencies": {
-        "yt-dlp": {
-          "command": "yt-dlp",
-          "optional": false
-        },
-        "ffmpeg": {
-          "command": "ffmpeg",
-          "optional": false
-        }
-      }
     },
     "many-ai": {
       "name": "many-ai",
@@ -67,11 +33,28 @@
       "description": "Chat with an AI model through Groq API!",
       "category": "utility",
       "service": false,
-      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
+      "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
       "license": "MIT",
       "main": "index.js",
       "dependencies": {
         "sqlite3": "^5.1.7"
+      }
+    },
+    "manymedia": {
+      "name": "manymedia",
+      "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
+      "version": "1.0.0",
+      "category": "media",
+      "service": false,
+      "externalDependencies": {
+        "yt-dlp": {
+          "command": "yt-dlp",
+          "optional": false
+        },
+        "instaloader": {
+          "command": "instaloader",
+          "optional": true
+        }
       }
     },
     "mcb-server": {
@@ -80,7 +63,7 @@
       "description": "Shows when someone enter in your Minecraft Server",
       "category": "utility",
       "service": false,
-      "author": "SyntaxError <dev@maneos.net> (https://git.maneos.net)",
+      "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
       "license": "MIT",
       "main": "index.js",
       "dependencies": {}
