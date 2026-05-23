@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-05-23T17:25:55.005Z",
+  "lastUpdated": "2026-05-23T21:11:33.256Z",
   "plugins": {
     "adivinhacao": {
       "name": "adivinhacao",
@@ -47,7 +47,7 @@
       "name": "manymedia",
       "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
       "description": "Download videos and audio from any link.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "category": "media",
       "service": false,
       "externalDependencies": {
@@ -71,6 +71,18 @@
       "license": "MIT",
       "main": "index.js",
       "dependencies": {}
+    },
+    "manyual": {
+      "name": "manyual",
+      "version": "1.0.0",
+      "description": "manual command to read how to use plugins, inspired by man pages",
+      "category": "utility",
+      "service": false,
+      "author": "",
+      "license": "MIT",
+      "main": "index.js",
+      "dependencies": {},
+      "externalDependencies": {}
     }
   }
 }
