@@ -1,10 +1,8 @@
 # ManyMedia
-
-Download videos and audio from YouTube, Reddit, and other yt-dlp supported sites — either sending the file directly to chat or uploading to a storage server and sharing the link.
+Download videos and audio from YouTube, Reddit, Instagram, and other yt-dlp supported sites — either sending the file directly to chat or uploading to a storage server and sharing the link.
 
 ## Features
-
-- **Multi-site support**: YouTube, Reddit, Instagram, Soundcloud, TikTok and other yt-dlp compatible site
+- **Multi-site support**: YouTube, Reddit, Instagram, SoundCloud, TikTok, and any other yt-dlp compatible site
 - **Audio extraction**: Downloads and extracts MP3 at best quality
 - **Flexible delivery**: Send file directly to chat, or upload to a storage server and reply with the link
 - **Upload retry**: Failed uploads are retried up to 4 times with a 3-second delay
@@ -12,41 +10,66 @@ Download videos and audio from YouTube, Reddit, and other yt-dlp supported sites
 - **Automatic cleanup**: Temporary files removed after delivery
 
 ## Requirements
-
 - `yt-dlp` installed and available in `PATH`
-- `cookies.txt` file in the project root (required for YouTube downloads)
+- `cookies.txt` file in the project root (required for YouTube and some other sites)
+- `instaloader` installed for Instagram downloads (optional, required only fort download Instagram vídeos)
 
 ## Usage
-
 ```
 !video https://youtube.com/watch?v=...
 !video https://www.reddit.com/r/...
+!video https://www.instagram.com/reel/...
 !audio https://youtube.com/watch?v=...
 ```
 
 ## Configuration
-
 Add to `manybot.conf`:
 
 | Key | Default | Description |
 |-----|---------|-------------|
 | `UPL_MEDIA_TO_SRV` | `no` | Set to `yes` to upload to the storage server and reply with a link instead of sending the file directly |
 | `MEDIA_SRV_API_KEY` | — | API key for the storage server (required when `UPL_MEDIA_TO_SRV=yes`) |
+| `INSTALOADER_PATH` | `instaloader` | Absolute path to the `instaloader` binary, or just `instaloader` if it is on `PATH` |
+| `INSTALOADER_USER` | — | Instagram username whose saved session instaloader will use to authenticate |
 
 ### Example
-
 ```env
 UPL_MEDIA_TO_SRV=yes
 MEDIA_SRV_API_KEY=your_api_key_here
+
+INSTALOADER_PATH=/home/youruser/.local/bin/instaloader
+INSTALOADER_USER=your_instagram_username
 ```
 
 When `UPL_MEDIA_TO_SRV=no` (default), the file is sent directly to the chat with no external upload.  
 When `UPL_MEDIA_TO_SRV=yes`, the file is uploaded to `https://api.stxerr.dev/upload` and the reply contains the download link.
 
-> Make sure to have your API key to use upload. If you don't have, request one sending an email to me@stxerr.dev.
+> Make sure to have your API key to use upload. If you don't have one, request it by sending an email to me@stxerr.dev.
+
+## Instagram Setup
+Instagram downloads require `instaloader` and a saved login session.
+
+**1. Install instaloader**
+```bash
+pip install instaloader
+```
+
+**2. Save a session** (run once, then instaloader reuses it automatically)
+```bash
+instaloader --login your_instagram_username
+```
+The session file is stored at `~/.config/instaloader/session-<username>`. As long as it exists, instaloader will authenticate without prompting for a password again.
+
+**3. Find the binary path** (if it is not on `PATH`)
+```bash
+which instaloader
+# or, if installed via pip --user:
+python3 -m site --user-base   # binary is under <user-base>/bin/instaloader
+```
+
+Set `INSTALOADER_PATH` to the full path returned above, or leave it as `instaloader` if `which` finds it directly.
 
 ## Localization
-
 Available in:
 - English (`locale/en.json`)
 - Portuguese (`locale/pt.json`)
