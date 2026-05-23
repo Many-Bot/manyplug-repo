@@ -1,9 +1,10 @@
 {
-  "lastUpdated": "2026-05-23T16:38:37.093Z",
+  "lastUpdated": "2026-05-23T17:25:55.005Z",
   "plugins": {
     "adivinhacao": {
       "name": "adivinhacao",
       "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
+      "description": "Number guessing game for Manybot.",
       "version": "1.0.0",
       "category": "games",
       "service": false,
@@ -12,6 +13,7 @@
     "figurinha": {
       "name": "figurinha",
       "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
+      "description": "Sticker creation plugin for Manybot.",
       "version": "1.2.1",
       "category": "media",
       "service": false,
@@ -22,6 +24,7 @@
     "forca": {
       "name": "forca",
       "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
+      "description": "Hangman game for Manybot.",
       "version": "1.0.0",
       "category": "games",
       "service": false,
@@ -43,6 +46,7 @@
     "manymedia": {
       "name": "manymedia",
       "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
+      "description": "Download videos and audio from any link.",
       "version": "1.0.0",
       "category": "media",
       "service": false,
@@ -67,6 +71,18 @@
       "license": "MIT",
       "main": "index.js",
       "dependencies": {}
+    },
+    "manyual": {
+      "name": "manyual",
+      "version": "1.0.0",
+      "description": "manual command to read how to use plugins, inspired by man pages",
+      "category": "utility",
+      "service": false,
+      "author": "",
+      "license": "MIT",
+      "main": "index.js",
+      "dependencies": {},
+      "externalDependencies": {}
     }
   }
 }
