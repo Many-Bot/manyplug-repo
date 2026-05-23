@@ -9,9 +9,9 @@
         "command": "yt-dlp",
         "optional": false
       },
-      "ffmpeg": {
-        "command": "ffmpeg",
-        "optional": false
+      "instaloader": {
+        "command": "instaloader",
+        "optional": true
       }
     }
 }
