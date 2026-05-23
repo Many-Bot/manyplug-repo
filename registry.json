@@ -71,18 +71,6 @@
       "license": "MIT",
       "main": "index.js",
       "dependencies": {}
-    },
-    "manyual": {
-      "name": "manyual",
-      "version": "1.0.0",
-      "description": "manual command to read how to use plugins, inspired by man pages",
-      "category": "utility",
-      "service": false,
-      "author": "",
-      "license": "MIT",
-      "main": "index.js",
-      "dependencies": {},
-      "externalDependencies": {}
     }
   }
 }
