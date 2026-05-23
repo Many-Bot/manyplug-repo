@@ -69,24 +69,28 @@ async function downloadInstagram(url) {
   const match = url.match(/instagram\.com\/(?:reel|p|tv)\/([^/?#]+)/);
   if (!match) throw new Error("Invalid Instagram URL.");
 
-  const shortcode =  match[1];
-  const fshortcode = "-" + shortcode;
-  const targetDir = path.join(DOWNLOADS_DIR, fshortcode);
+  const shortcode = match[1];
+  const targetDir = path.join(DOWNLOADS_DIR, shortcode);
+  fs.mkdirSync(targetDir, { recursive: true });
 
   console.log(`[video] instaloader binary: ${INSTALOADER_PATH}`);
   console.log(`[video] Instagram session user: ${INSTALOADER_USER}`);
+  console.log(`[video] Instagram shortcode: ${shortcode} -> ${targetDir}`);
 
+  // --login=USER matches the shell invocation exactly; passing as two args also
+  // works but this form is unambiguous across instaloader versions.
   await execFileAsync(INSTALOADER_PATH, [
-    "--login",           INSTALOADER_USER,
-    "--dirname-pattern", `${DOWNLOADS_DIR}/{target}`,
+    `--login=${INSTALOADER_USER}`,
+    `--dirname-pattern=${targetDir}`,
     "--no-metadata-json",
     "--no-captions",
-    "--",                `-${shortcode}`,
+    "--",
+    `-${shortcode}`,
   ]);
 
   const files = await fs.promises.readdir(targetDir);
   const mp4   = files.find(f => f.endsWith(".mp4"));
-  if (!mp4) throw new Error("MP4 not found after instaloader download.");
+  if (!mp4) throw new Error(`MP4 not found in ${targetDir}. Files present: ${files.join(", ") || "(none)"}`);
 
   return { filePath: path.resolve(targetDir, mp4), tmpDir: targetDir };
 }
