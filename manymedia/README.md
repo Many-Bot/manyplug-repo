@@ -31,6 +31,7 @@ Add to `manybot.conf`:
 | `MEDIA_SRV_API_KEY` | — | API key for the storage server (required when `UPL_MEDIA_TO_SRV=yes`) |
 | `INSTALOADER_PATH` | `instaloader` | Absolute path to the `instaloader` binary, or just `instaloader` if it is on `PATH` |
 | `INSTALOADER_USER` | — | Instagram username whose saved session instaloader will use to authenticate |
+| `INSTALOADER_SESSION_FILE` | — | User session file path (Optional) |
 
 ### Example
 ```env
@@ -39,6 +40,7 @@ MEDIA_SRV_API_KEY=your_api_key_here
 
 INSTALOADER_PATH=/home/youruser/.local/bin/instaloader
 INSTALOADER_USER=your_instagram_username
+INSTALOADER_SESSION_FILE=/home/user/.config/instaloader/session-youruser
 ```
 
 When `UPL_MEDIA_TO_SRV=no` (default), the file is sent directly to the chat with no external upload.  
