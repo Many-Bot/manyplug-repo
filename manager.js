@@ -32,7 +32,8 @@ if (fs.existsSync(regPath)) {
 
 for (const entry of entries) {
 	if (!entry.isDirectory()) continue; // if it is not a directory, skip and continue the next loop
-	
+  if (entry.name.includes("-DEV")) continue; // eg. "plugin-DEV" > skip	
+
 	const manifestPath = path.join(".", entry.name, 'manyplug.json');
 	if (!await fs.pathExists(manifestPath)) continue;
 	
