@@ -18,7 +18,8 @@ const {
   UPL_MEDIA_TO_SRV    = "no",
   MEDIA_SRV_API_KEY,
   INSTALOADER_PATH    = "instaloader",   // absolute path or command name on PATH
-  INSTALOADER_USER,                      // Instagram username whose session to load
+  INSTALOADER_USER,                          // Instagram username whose session to load
+  INSTALOADER_SESSION_FILE,                      // absolute path to the instaloader session file
 } = CONFIG;
 const { t } = createPluginI18n(import.meta.url);
 
@@ -34,26 +35,36 @@ const UPLOAD_URL    = "https://api.stxerr.dev/upload";
 async function resolveRedditUrl(url) {
   if (!url.includes("reddit.com") && !url.includes("redd.it")) return url;
 
-  console.log(`[video] Reddit URL detected, resolving via JSON API: ${url}`);
-  const res = await fetch(url.replace(/\/$/, "") + ".json", {
+  // old.reddit.com is less aggressively blocked on VPS/datacenter IPs than www.
+  const jsonUrl = url
+    .replace(/\/+$/, "")
+    .replace(/^https?:\/\/(www\.)?reddit\.com/, "https://old.reddit.com")
+    + ".json";
+
+  console.log(`[video] Reddit URL detected, resolving via JSON API: ${jsonUrl}`);
+
+  const res = await fetch(jsonUrl, {
     headers: {
-      "User-Agent": "bot:video-downloader-plugin:1.0 (by /u/anonymous)",
-      "Accept": "application/json",
+      // Mimic a real browser request — Reddit 403s generic bot User-Agents on VPS IPs
+      "User-Agent":      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      "Accept":          "application/json, text/javascript, */*; q=0.01",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Referer":         "https://old.reddit.com/",
     },
   });
 
   if (!res.ok) throw new Error(`Reddit JSON API error: ${res.status} ${res.statusText}`);
 
   const json = await res.json().catch(() => { throw new Error("Reddit returned non-JSON response"); });
-  const post = json?.[0]?.data?.children?.[0]?.data;
+  const post  = json?.[0]?.data?.children?.[0]?.data;
   if (!post) throw new Error("Could not parse Reddit post data from JSON response");
 
   const videoUrl = post?.secure_media?.reddit_video?.hls_url
     ?? post?.media?.reddit_video?.hls_url;
-  if (!videoUrl) throw new Error(t("error.redditVideoNotFound") ?? "No v.redd.it video found in this Reddit post.");
+  if (!videoUrl) throw new Error("No v.redd.it video found in this Reddit post.");
 
   const cleanUrl = videoUrl.replace(/&amp;/g, "&");
-  console.log(`[video] Resolved Reddit video URL: ${cleanUrl}`);
+  console.log(`[video] Resolved Reddit HLS URL: ${cleanUrl}`);
   return cleanUrl;
 }
 
@@ -64,29 +75,33 @@ async function resolveUrl(url) {
 // ─── Downloaders ──────────────────────────────────────────────────────────────
 
 async function downloadInstagram(url) {
-  if (!INSTALOADER_USER) throw new Error("INSTALOADER_USER is not set in config. Cannot download Instagram content.");
+  if (!INSTALOADER_USER)         throw new Error("INSTALOADER_USER is not set in config.");
+  if (!INSTALOADER_SESSION_FILE) throw new Error("INSTALOADER_SESSION_FILE is not set in config.");
 
   const match = url.match(/instagram\.com\/(?:reel|p|tv)\/([^/?#]+)/);
   if (!match) throw new Error("Invalid Instagram URL.");
 
   const shortcode = match[1];
   const targetDir = path.join(DOWNLOADS_DIR, shortcode);
-  fs.mkdirSync(targetDir, { recursive: true });
+  fs.mkdirSync(targetDir, { recursive: true, mode: 0o755 });
 
   console.log(`[video] instaloader binary: ${INSTALOADER_PATH}`);
   console.log(`[video] Instagram session user: ${INSTALOADER_USER}`);
   console.log(`[video] Instagram shortcode: ${shortcode} -> ${targetDir}`);
 
-  // --login=USER matches the shell invocation exactly; passing as two args also
-  // works but this form is unambiguous across instaloader versions.
+  console.log(`[video] instaloader session file: ${INSTALOADER_SESSION_FILE}`);
+
+  // --sessionfile pins the exact session path so it works regardless of which
+  // user (or systemd unit) runs the process — avoids the interactive password prompt.
   await execFileAsync(INSTALOADER_PATH, [
     `--login=${INSTALOADER_USER}`,
+    `--sessionfile=${INSTALOADER_SESSION_FILE}`,
     `--dirname-pattern=${targetDir}`,
     "--no-metadata-json",
     "--no-captions",
     "--",
     `-${shortcode}`,
-  ]);
+  ], { timeout: 60_000 }); // 60s hard timeout — prevents freezing if session is invalid
 
   const files = await fs.promises.readdir(targetDir);
   const mp4   = files.find(f => f.endsWith(".mp4"));
