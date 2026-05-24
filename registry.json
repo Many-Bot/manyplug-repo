@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-05-24T03:38:49.158Z",
+  "lastUpdated": "2026-05-24T03:41:29.457Z",
   "plugins": {
     "adivinhacao": {
       "name": "adivinhacao",
@@ -42,6 +42,35 @@
       "dependencies": {
         "sqlite3": "^5.1.7"
       }
+    },
+    "manymedia": {
+      "name": "manymedia",
+      "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
+      "description": "Download videos and audio from any link.",
+      "version": "1.0.2",
+      "category": "media",
+      "service": false,
+      "externalDependencies": {
+        "yt-dlp": {
+          "command": "yt-dlp",
+          "optional": false
+        },
+        "instaloader": {
+          "command": "instaloader",
+          "optional": true
+        }
+      }
+    },
+    "mcb-server": {
+      "name": "mcb-server",
+      "version": "1.1.0",
+      "description": "Shows when someone enter in your Minecraft Server",
+      "category": "utility",
+      "service": false,
+      "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
+      "license": "MIT",
+      "main": "index.js",
+      "dependencies": {}
     }
   }
 }
