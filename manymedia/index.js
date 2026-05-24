@@ -35,37 +35,21 @@ const UPLOAD_URL    = "https://api.stxerr.dev/upload";
 async function resolveRedditUrl(url) {
   if (!url.includes("reddit.com") && !url.includes("redd.it")) return url;
 
-  // old.reddit.com is less aggressively blocked on VPS/datacenter IPs than www.
-  const jsonUrl = url
-    .replace(/\/+$/, "")
-    .replace(/^https?:\/\/(www\.)?reddit\.com/, "https://old.reddit.com")
-    + ".json";
+  console.log(`[video] Reddit URL detected, resolving via yt-dlp --get-url`);
 
-  console.log(`[video] Reddit URL detected, resolving via JSON API: ${jsonUrl}`);
+  const { stdout } = await execFileAsync("yt-dlp", [
+    "--get-url",
+    "--no-playlist",
+    "--cookies", "cookies.txt",
+    url,
+  ]);
 
-  const res = await fetch(jsonUrl, {
-    headers: {
-      // Mimic a real browser request — Reddit 403s generic bot User-Agents on VPS IPs
-      "User-Agent":      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-      "Accept":          "application/json, text/javascript, */*; q=0.01",
-      "Accept-Language": "en-US,en;q=0.9",
-      "Referer":         "https://old.reddit.com/",
-    },
-  });
+  // --get-url returns one URL per line; grab the first v.redd.it one (video stream)
+  const videoUrl = stdout.trim().split("\n").find(l => l.includes("v.redd.it"));
+  if (!videoUrl) throw new Error("yt-dlp could not extract a v.redd.it URL from this Reddit post.");
 
-  if (!res.ok) throw new Error(`Reddit JSON API error: ${res.status} ${res.statusText}`);
-
-  const json = await res.json().catch(() => { throw new Error("Reddit returned non-JSON response"); });
-  const post  = json?.[0]?.data?.children?.[0]?.data;
-  if (!post) throw new Error("Could not parse Reddit post data from JSON response");
-
-  const videoUrl = post?.secure_media?.reddit_video?.hls_url
-    ?? post?.media?.reddit_video?.hls_url;
-  if (!videoUrl) throw new Error("No v.redd.it video found in this Reddit post.");
-
-  const cleanUrl = videoUrl.replace(/&amp;/g, "&");
-  console.log(`[video] Resolved Reddit HLS URL: ${cleanUrl}`);
-  return cleanUrl;
+  console.log(`[video] Resolved Reddit URL: ${videoUrl}`);
+  return videoUrl;
 }
 
 async function resolveUrl(url) {
