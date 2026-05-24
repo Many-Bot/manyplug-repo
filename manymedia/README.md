@@ -11,8 +11,8 @@ Download videos and audio from YouTube, Reddit, Instagram, and other yt-dlp supp
 
 ## Requirements
 - `yt-dlp` installed and available in `PATH`
-- `cookies.txt` file in the project root (required for YouTube and some other sites)
-- `instaloader` installed for Instagram downloads (optional, required only fort download Instagram vídeos)
+- `cookies.txt` file in the project root (**required** — used for YouTube, Reddit, and other sites that need authentication)
+- `instaloader` installed for Instagram downloads only (optional — see [Instagram setup](#instagram-setup))
 
 ## Usage
 ```
@@ -31,7 +31,6 @@ Add to `manybot.conf`:
 | `MEDIA_SRV_API_KEY` | — | API key for the storage server (required when `UPL_MEDIA_TO_SRV=yes`) |
 | `INSTALOADER_PATH` | `instaloader` | Absolute path to the `instaloader` binary, or just `instaloader` if it is on `PATH` |
 | `INSTALOADER_USER` | — | Instagram username whose saved session instaloader will use to authenticate |
-| `INSTALOADER_SESSION_FILE` | — | User session file path (Optional) |
 
 ### Example
 ```env
@@ -40,7 +39,6 @@ MEDIA_SRV_API_KEY=your_api_key_here
 
 INSTALOADER_PATH=/home/youruser/.local/bin/instaloader
 INSTALOADER_USER=your_instagram_username
-INSTALOADER_SESSION_FILE=/home/user/.config/instaloader/session-youruser
 ```
 
 When `UPL_MEDIA_TO_SRV=no` (default), the file is sent directly to the chat with no external upload.  
@@ -48,8 +46,21 @@ When `UPL_MEDIA_TO_SRV=yes`, the file is uploaded to `https://api.stxerr.dev/upl
 
 > Make sure to have your API key to use upload. If you don't have one, request it by sending an email to me@stxerr.dev.
 
-## Instagram Setup
-Instagram downloads require `instaloader` and a saved login session.
+## cookies.txt Setup
+`cookies.txt` is required for Reddit, YouTube, and other sites that enforce login or rate limits. Without it, downloads from these sites will fail.
+
+**1. Install a browser extension** to export cookies in Netscape format:
+- Chrome/Edge: [Get cookies.txt LOCALLY](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)
+- Firefox: [cookies.txt](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/)
+
+**2. Log in** to Reddit (and YouTube if needed) in your browser.
+
+**3. Export** the cookies using the extension and save the file as `cookies.txt` in the root of the ManyBot project (`/opt/manybot/cookies.txt`).
+
+> Cookies expire over time. If downloads start failing again, re-export and replace the file.
+
+## Instagram Setup (optional)
+Instagram downloads require `instaloader` and a saved login session. If you don't need Instagram support, skip this section — all other sites work without it.
 
 **1. Install instaloader**
 ```bash
