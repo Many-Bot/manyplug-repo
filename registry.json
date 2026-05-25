@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-05-24T04:38:52.347Z",
+  "lastUpdated": "2026-05-25T21:47:04.894Z",
   "plugins": {
     "adivinhacao": {
       "name": "adivinhacao",
@@ -63,7 +63,7 @@
     },
     "mcb-server": {
       "name": "mcb-server",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "description": "Shows when someone enter in your Minecraft Server",
       "category": "utility",
       "service": false,
