@@ -2,11 +2,32 @@ import fs from "fs";
 import { CMD_PREFIX, CONFIG } from "../../config.js";
 import { createPluginT } from "../../i18n/index.js";
 
+const PLAYERS_FILE = "mcplayers.json"
+
 const { MC_GROUP_ID, MC_LOG_FILE } = CONFIG;
 const { t } = createPluginT(import.meta.url);
 
+
+function loadPlayers() {
+  try {
+    if (!fs.existsSync(PLAYERS_FILE))
+      return [];
+
+    return JSON.parse(fs.readFileSync(PLAYERS_FILE, "utf8"));
+  } catch {
+    return [];
+  }
+}
+
+function savePlayers() {
+  fs.writeFileSync(
+    PLAYERS_FILE,
+    JSON.stringify(players, null, 2)
+  );
+}
+
 let apiRef = null;
-let players = [];
+let players = loadPlayers();
 
 function handleLine(line) {
   if (!line || !apiRef) return;
@@ -15,6 +36,7 @@ function handleLine(line) {
   if (joinMatch) {
     apiRef.sendTo(MC_GROUP_ID, t("messages.playerConnected", { name: joinMatch[1] }));
     players.push(joinMatch[1]);
+    savePlayers();
     return;
   }
 
@@ -22,6 +44,7 @@ function handleLine(line) {
   if (leaveMatch) {
     apiRef.sendTo(MC_GROUP_ID, t("messages.playerDisconnected", { name: leaveMatch[1] }));
     players = players.filter(p => p !== leaveMatch[1]);
+    savePlayers();
   }
 }
 
