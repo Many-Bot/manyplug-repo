@@ -69,8 +69,6 @@ export async function setup(api) {
 
     stream.on("error", err => api.log.error(t("messages.streamError", { error: err.message })));
   });
-
-  api.log.info(t("messages.watcherActive", { file: MC_LOG_FILE }));
 }
 
 export default async function ({ msg }) {
