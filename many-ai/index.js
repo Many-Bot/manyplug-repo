@@ -58,19 +58,16 @@ async function callGroq(history, systemPrompt) {
 function parseReply(reply, api) {
   const searchMatch = reply.match(/^SEARCH\((.+)\)$/);
   if (searchMatch) {
-    api.log.info(t("logs.commandDetected", { command: "SEARCH", arg: searchMatch[1] }));
     return { type: "command", command: "SEARCH", arg: searchMatch[1] };
   }
 
   const memReadMatch = reply.match(/^MEM_READ\((.+)\)$/);
   if (memReadMatch) {
-    api.log.info(t("logs.commandDetected", { command: "MEM_READ", arg: memReadMatch[1] }));
     return { type: "command", command: "MEM_READ", arg: memReadMatch[1] };
   }
 
   const memWriteMatch = reply.match(/^MEM_WRITE\((.+)\)$/);
   if (memWriteMatch) {
-    api.log.info(t("logs.commandDetected", { command: "MEM_WRITE", arg: memWriteMatch[1] }));
     return { type: "command", command: "MEM_WRITE", arg: memWriteMatch[1] };
   }
 
@@ -87,10 +84,8 @@ function parseReply(reply, api) {
 }
 
 async function resolveReply(history, systemPrompt, api, maxIterations = 5) {
-  api.log.info(t("logs.historyStart", { count: history.length }));
   for (let i = 0; i < maxIterations; i++) {
     const raw = await callGroq(history, systemPrompt);
-    api.log.info(t("logs.groqResponse", raw.substring(0, 100)));
     history.push({ role: "assistant", content: raw });
     trimHistory(history);
 
@@ -108,10 +103,8 @@ async function resolveReply(history, systemPrompt, api, maxIterations = 5) {
       let result;
 
       if (parsed.command === "SEARCH") {
-        api.log.info(t("logs.searchExecuting", { query: parsed.arg }));
         result = await doSearch(parsed.arg, { TAVILY_API_KEY, SERPER_API_KEY });
       } else if (parsed.command === "MEM_READ") {
-        api.log.info(t("logs.memoryReadExecuting", { query: parsed.arg }));
         try {
           result = await memRead(parsed.arg);
         } catch (err) {
@@ -119,7 +112,6 @@ async function resolveReply(history, systemPrompt, api, maxIterations = 5) {
           result = t("errors.memoryReadError");
         }
       } else if (parsed.command === "MEM_WRITE") {
-        api.log.info(t("logs.memoryWriteExecuting", { arg: parsed.arg }));
         try {
           await memWrite(parsed.arg);
           history.push({ role: "user", content: `[${t("memory.saved")}]` });
@@ -150,7 +142,6 @@ async function shouldRespond(msg, api) {
       const quoted = await msg.getQuotedMessage();
       const sender = quoted.author || quoted.from;
       if (sender === botid) {
-        api.log.info(t("logs.shouldRespond.quotedMessage"));
         return true;
       }
     } catch (err) {
@@ -184,15 +175,12 @@ export default async function ({ msg, api }) {
   if (body.trim().startsWith(CMD_PREFIX)) {
     const formatted = `command|${msg.senderName}|${now}|${body}`;
     history.push({ role: "system", content: formatted });
-    api.log.info(t("logs.commandAdded", { cmd: body.substring(0, 30) }));
   } else {
     const chatType = api.chat.isGroup ? "group" : "private";
     const formatted = `${chatType}|member|${msg.senderName}|${now}|${body}`;
     history.push({ role: "user", content: formatted });
   }
   trimHistory(history);
-
-  api.log.info(t("logs.historyLength", { chatId, count: history.length }));
 
   if (!(await shouldRespond(msg, api))) return;
 
