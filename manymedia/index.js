@@ -1,7 +1,7 @@
 /**
  * plugins/manymedia/index.js
  *
- * Downloads video or audio via yt-dlp (or instaloader for Instagram)
+ * Downloads video or audio via yt-dlp
  * and uploads/sends to server. Handles /video and /audio commands.
  */
 
@@ -17,9 +17,6 @@ const execFileAsync = promisify(execFile);
 const {
   UPL_MEDIA_TO_SRV    = "no",
   MEDIA_SRV_API_KEY,
-  INSTALOADER_PATH    = "instaloader",   // absolute path or command name on PATH
-  INSTALOADER_USER,                      // Instagram username whose session to load
-  INSTALOADER_SESSION_FILE,              // absolute path to the instaloader session file
 } = CONFIG;
 const { t } = createPluginI18n(import.meta.url);
 
@@ -57,42 +54,6 @@ async function resolveUrl(url) {
 }
 
 // ─── Downloaders ──────────────────────────────────────────────────────────────
-
-async function downloadInstagram(url) {
-  if (!INSTALOADER_USER)         throw new Error("INSTALOADER_USER is not set in config.");
-  if (!INSTALOADER_SESSION_FILE) throw new Error("INSTALOADER_SESSION_FILE is not set in config.");
-
-  const match = url.match(/instagram\.com\/(?:reel|p|tv)\/([^/?#]+)/);
-  if (!match) throw new Error("Invalid Instagram URL.");
-
-  const shortcode = match[1];
-  const targetDir = path.join(DOWNLOADS_DIR, shortcode);
-  fs.mkdirSync(targetDir, { recursive: true, mode: 0o755 });
-
-  console.log(`[video] instaloader binary: ${INSTALOADER_PATH}`);
-  console.log(`[video] Instagram session user: ${INSTALOADER_USER}`);
-  console.log(`[video] Instagram shortcode: ${shortcode} -> ${targetDir}`);
-
-  console.log(`[video] instaloader session file: ${INSTALOADER_SESSION_FILE}`);
-
-  // --sessionfile pins the exact session path so it works regardless of which
-  // user (or systemd unit) runs the process — avoids the interactive password prompt.
-  await execFileAsync(INSTALOADER_PATH, [
-    `--login=${INSTALOADER_USER}`,
-    `--sessionfile=${INSTALOADER_SESSION_FILE}`,
-    `--dirname-pattern=${targetDir}`,
-    "--no-metadata-json",
-    "--no-captions",
-    "--",
-    `-${shortcode}`,
-  ], { timeout: 60_000 }); // 60s hard timeout — prevents freezing if session is invalid
-
-  const files = await fs.promises.readdir(targetDir);
-  const mp4   = files.find(f => f.endsWith(".mp4"));
-  if (!mp4) throw new Error(`MP4 not found in ${targetDir}. Files present: ${files.join(", ") || "(none)"}`);
-
-  return { filePath: path.resolve(targetDir, mp4), tmpDir: targetDir };
-}
 
 function buildYtDlpArgs(url, format) {
   const isYouTube = url.includes("youtube.com") || url.includes("youtu.be");
@@ -180,9 +141,6 @@ async function downloadYtDlp(url, id, format) {
 
 async function downloadMedia(url, id, format) {
   url = await resolveUrl(url);
-
-  const isInstagram = url.includes("instagram.com");
-  if (isInstagram) return downloadInstagram(url);
 
   return downloadYtDlp(url, id, format);
 }
