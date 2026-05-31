@@ -12,7 +12,6 @@ Download videos and audio from YouTube, Reddit, Instagram, and other yt-dlp supp
 ## Requirements
 - `yt-dlp` installed and available in `PATH`
 - `cookies.txt` file in the project root (**required** — used for YouTube, Reddit, and other sites that need authentication)
-- `instaloader` installed for Instagram downloads only (optional — see [Instagram setup](#instagram-setup))
 
 ## Usage
 ```
@@ -29,16 +28,11 @@ Add to `manybot.conf`:
 |-----|---------|-------------|
 | `UPL_MEDIA_TO_SRV` | `no` | Set to `yes` to upload to the storage server and reply with a link instead of sending the file directly |
 | `MEDIA_SRV_API_KEY` | — | API key for the storage server (required when `UPL_MEDIA_TO_SRV=yes`) |
-| `INSTALOADER_PATH` | `instaloader` | Absolute path to the `instaloader` binary, or just `instaloader` if it is on `PATH` |
-| `INSTALOADER_USER` | — | Instagram username whose saved session instaloader will use to authenticate |
 
 ### Example
 ```env
 UPL_MEDIA_TO_SRV=yes
 MEDIA_SRV_API_KEY=your_api_key_here
-
-INSTALOADER_PATH=/home/youruser/.local/bin/instaloader
-INSTALOADER_USER=your_instagram_username
 ```
 
 When `UPL_MEDIA_TO_SRV=no` (default), the file is sent directly to the chat with no external upload.  
@@ -58,29 +52,6 @@ When `UPL_MEDIA_TO_SRV=yes`, the file is uploaded to `https://api.stxerr.dev/upl
 **3. Export** the cookies using the extension and save the file as `cookies.txt` in the root of the ManyBot project (`/opt/manybot/cookies.txt`).
 
 > Cookies expire over time. If downloads start failing again, re-export and replace the file.
-
-## Instagram Setup (optional)
-Instagram downloads require `instaloader` and a saved login session. If you don't need Instagram support, skip this section — all other sites work without it.
-
-**1. Install instaloader**
-```bash
-pip install instaloader
-```
-
-**2. Save a session** (run once, then instaloader reuses it automatically)
-```bash
-instaloader --login your_instagram_username
-```
-The session file is stored at `~/.config/instaloader/session-<username>`. As long as it exists, instaloader will authenticate without prompting for a password again.
-
-**3. Find the binary path** (if it is not on `PATH`)
-```bash
-which instaloader
-# or, if installed via pip --user:
-python3 -m site --user-base   # binary is under <user-base>/bin/instaloader
-```
-
-Set `INSTALOADER_PATH` to the full path returned above, or leave it as `instaloader` if `which` finds it directly.
 
 ## Localization
 Available in:
