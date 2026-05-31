@@ -11,9 +11,17 @@
     "memoryWriteError": "Erro ao salvar na memória: {{error}}"
   },
   "memory": {
+    "dbOpened": "Banco de memória aberto",
+    "insertSuccess": "Memória salva",
     "saved": "Memória salva com sucesso",
     "readError": "Falha ao ler memória",
-    "writeError": "Falha ao salvar memória"
+    "writeError": "Falha ao salvar memória",
+    "dbOpenError": "Erro ao abrir banco de memória: {{error}}", 
+    "walError": "Erro ao ativar WAL mode: {{error}}",
+    "tableCreateError": "Erro ao criar tabela de memória: {{error}}",
+    "insertError": "Falha ao salvar memória: {{error}}",
+    "selectError": "Falha ao consultar memória: {{error}}",
+    "noResults": "Nenhum resultado encontrado."
   },
   "logs": {
     "historyStart": "Iniciando resolveReply, histórico tem {{count}} msgs",

@@ -28,14 +28,12 @@ function logError(msg) {
 
 const db = new sqlite3.Database(DB_PATH, (err) => {
   if (err) {
-    logError(`[memory] Erro ao abrir banco: ${err.message}`);
-  } else {
-    logInfo(`[memory] Banco aberto: ${DB_PATH}`);
+    logError(t("memory.dbOpenError", { error: err.message }));
   }
 });
 
 db.run("PRAGMA journal_mode = WAL;", (err) => {
-  if (err) logError(`[memory] Erro WAL mode: ${err.message}`);
+  if (err) logError(t("memory.walError", { error: err.message }));
 });
 
 db.run(
@@ -46,9 +44,7 @@ db.run(
   )`,
   (err) => {
     if (err) {
-      logError(`[memory] Erro ao criar tabela: ${err.message}`);
-    } else {
-      logInfo("[memory] Tabela 'memory' pronta");
+      logError(t("memory.tableCreateError", { error: err.message }));
     }
   }
 );
@@ -57,16 +53,15 @@ export function memWrite(content) {
   return new Promise((resolve, reject) => {
     db.run("INSERT INTO memory (content) VALUES (?)", [content], function(err) {
       if (err) {
-        logError(`[memory] INSERT falhou: ${err.message}`);
+        logError(t("memory.insertError", { error: err.message }));
         return reject(err);
       }
-      logInfo(`[memory] INSERT sucesso, id=${this.lastID}`);
-      resolve(`Memória salva (id=${this.lastID})`);
+      resolve(t("memory.saved"));
     });
   });
 }
 
-export function memRead(query) {
+export function memRead() {
   return new Promise((resolve, reject) => {
     const isAll = query === "*" || query.toLowerCase() === "all" || query.toLowerCase() === "tudo";
     const sql = isAll
@@ -76,14 +71,11 @@ export function memRead(query) {
 
     db.all(sql, params, (err, rows) => {
       if (err) {
-        logError(`[memory] SELECT falhou: ${err.message}`);
+        logError(t("memory.selectError", { error: err.message }));
         return reject(err);
       }
-      if (!rows.length) return resolve("Nenhum resultado.");
+      if (!rows.length) return resolve(t("memory.noResults"));
       resolve(rows.map(r => `[${r.content}]`).join(" | "));
     });
   });
 }
-
-// Teste inicial
-console.log("[memory] Módulo carregado");

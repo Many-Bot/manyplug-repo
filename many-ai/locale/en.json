@@ -11,9 +11,17 @@
     "memoryWriteError": "Error saving to memory: {{error}}"
   },
   "memory": {
+    "dbOpened": "Memory database opened",
+    "insertSuccess": "Memory saved",
     "saved": "Memory saved successfully",
     "readError": "Failed to read memory",
-    "writeError": "Failed to save memory"
+    "writeError": "Failed to save memory",
+    "dbOpenError": "Error opening memory database: {{error}}",
+    "walError": "Failed to enable WAL mode: {{error}}",
+    "tableCreateError": "Failed to create memory table: {{error}}",
+    "insertError": "Failed to save memory: {{error}}",
+    "selectError": "Failed to query memory: {{error}}",
+    "noResults": "No results found."
   },
   "logs": {
     "historyStart": "Starting resolveReply, history has {{count}} messages",
