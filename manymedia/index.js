@@ -27,12 +27,11 @@ logStream.on("error", err => console.error("[logStream]", err));
 const DOWNLOADS_DIR = path.resolve("downloads");
 const UPLOAD_URL    = "https://api.stxerr.dev/upload";
 
-// ─── URL Resolvers ────────────────────────────────────────────────────────────
+
+// Resolve Reddit URL
 
 async function resolveRedditUrl(url) {
-  if (!url.includes("reddit.com") && !url.includes("redd.it")) return url;
-
-  console.log(`[video] Reddit URL detected, resolving via yt-dlp --get-url`);
+  if (!url.includes("reddit.com") && !url.includes("redd.it")) return { url, audioUrl: null };
 
   const { stdout } = await execFileAsync("yt-dlp", [
     "--get-url",
@@ -41,17 +40,13 @@ async function resolveRedditUrl(url) {
     url,
   ]);
 
-  // --get-url returns one URL per line; grab the first v.redd.it one (video stream)
-  const videoUrl = stdout.trim().split("\n").find(l => l.includes("v.redd.it"));
-  if (!videoUrl) throw new Error("yt-dlp could not extract a v.redd.it URL from this Reddit post.");
+  const lines = stdout.trim().split("\n").filter(Boolean);
+  const videoUrl = lines.find(l => !l.includes("AUDIO")) ?? lines[0];
+  const audioUrl = lines.find(l => l.includes("AUDIO")) ?? null;
 
-  console.log(`[video] Resolved Reddit URL: ${videoUrl}`);
-  return videoUrl;
+  return { url: videoUrl, audioUrl };
 }
 
-async function resolveUrl(url) {
-  return resolveRedditUrl(url);
-}
 
 // ─── Downloaders ──────────────────────────────────────────────────────────────
 
@@ -98,9 +93,6 @@ async function downloadYtDlp(url, id, format) {
       url,
     ];
 
-    console.log(`[video] Downloading (${format}): ${url}`);
-    console.log(`[video] yt-dlp args: ${args.join(" ")}`);
-
     const proc = spawn("yt-dlp", args);
     let stdout = "", stderr = "";
 
@@ -133,16 +125,58 @@ async function downloadYtDlp(url, id, format) {
         return reject(new Error(t("error.fileNotFound")));
       }
 
-      console.log(`[video] Downloaded to: ${filePath}`);
       resolve({ filePath, tmpDir });
     });
   });
 }
 
-async function downloadMedia(url, id, format) {
-  url = await resolveUrl(url);
+async function downloadRedditWithAudio(videoUrl, audioUrl, id, format) {
+  const tmpDir = path.join(DOWNLOADS_DIR, id);
+  fs.mkdirSync(tmpDir, { recursive: true });
+  
+  const isMp3     = format === "mp3";
+  const filePath = isMp3 ? path.join(tmpDir, "audio.mp3") : path.join(tmpDir, "video.mp4");
 
-  return downloadYtDlp(url, id, format);
+  let args;
+  if (isMp3) {
+    args = [
+      "-i", audioUrl,
+      "-shortest",
+      filePath,
+    ]
+  } else {
+    args = [
+      "-i", videoUrl,
+      "-i", audioUrl,
+      "-c:v", "copy",
+      "-c:a", "aac",
+      "-shortest",
+      filePath,
+    ]
+  }
+
+  await new Promise((resolve, reject) => {
+    const proc = spawn("ffmpeg", args);
+
+    proc.stderr.on("data", d => logStream.write(d));
+    proc.on("error", reject);
+    proc.on("close", code => {
+      if (code !== 0) return reject(new Error(`ffmpeg exited with code ${code}`));
+      resolve();
+    });
+  });
+
+  return { filePath, tmpDir };
+}
+
+async function downloadMedia(url, id, format) {
+  const { url: resolvedUrl, audioUrl } = await resolveRedditUrl(url); 
+
+  if (audioUrl) {
+    return downloadRedditWithAudio(resolvedUrl, audioUrl, id, format);
+  }
+
+  return downloadYtDlp(resolvedUrl, id, format);
 }
 
 // ─── Upload ───────────────────────────────────────────────────────────────────
@@ -153,7 +187,6 @@ const UPLOAD_RETRY_DELAY_MS = 3000;
 async function uploadToServer(filePath) {
   const fileBuffer = fs.readFileSync(filePath);
   const fileName   = path.basename(filePath);
-  console.log(`[video] Uploading: ${fileName} (${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
 
   let lastError;
   for (let attempt = 1; attempt <= UPLOAD_RETRIES; attempt++) {
@@ -175,7 +208,6 @@ async function uploadToServer(filePath) {
       if (!result.url) throw new Error("Server response missing url");
 
       const finalUrl = result.url.startsWith("https") ? result.url : `https://api.stxerr.dev${result.url}`;
-      console.log(`[video] Upload complete: ${finalUrl}`);
       return finalUrl;
 
     } catch (err) {
