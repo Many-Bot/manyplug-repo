@@ -2,13 +2,17 @@
     "name": "manymedia",
     "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
     "description": "Download videos and audio from any link.",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "category": "media",
     "service": false,
     "externalDependencies": {
       "yt-dlp": {
         "command": "yt-dlp",
         "optional": false
+      },
+      "ffmpeg": {
+        "command": "ffmpeg",
+        "optional": true
       }
     }
 }
