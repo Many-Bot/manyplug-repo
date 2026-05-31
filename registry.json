@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-05-31T02:24:30.453Z",
+  "lastUpdated": "2026-05-31T06:49:49.623Z",
   "plugins": {
     "adivinhacao": {
       "name": "adivinhacao",
@@ -47,7 +47,7 @@
       "name": "manymedia",
       "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
       "description": "Download videos and audio from any link.",
-      "version": "2.1.0",
+      "version": "2.2.0",
       "category": "media",
       "service": false,
       "externalDependencies": {
