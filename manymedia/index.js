@@ -18,8 +18,8 @@ const {
   UPL_MEDIA_TO_SRV    = "no",
   MEDIA_SRV_API_KEY,
   INSTALOADER_PATH    = "instaloader",   // absolute path or command name on PATH
-  INSTALOADER_USER,                          // Instagram username whose session to load
-  INSTALOADER_SESSION_FILE,                      // absolute path to the instaloader session file
+  INSTALOADER_USER,                      // Instagram username whose session to load
+  INSTALOADER_SESSION_FILE,              // absolute path to the instaloader session file
 } = CONFIG;
 const { t } = createPluginI18n(import.meta.url);
 
