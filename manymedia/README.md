@@ -11,6 +11,7 @@ Download videos and audio from YouTube, Reddit, Instagram, and other yt-dlp supp
 
 ## Requirements
 - `yt-dlp` installed and available in `PATH`
+- `ffmpeg` it is needed when convering filetypes (e.g. mp4 to mp3) and post-processing, but for downloading is optional
 - `cookies.txt` file in the project root (**required** — used for YouTube, Reddit, and other sites that need authentication)
 
 ## Usage
