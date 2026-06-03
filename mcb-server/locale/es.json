@@ -1,0 +1,11 @@
+{
+  "messages": {
+    "playerConnected": "⛏️ *{{name}}* se ha conectado a Minecraft!",
+    "playerDisconnected": "👋 *{{name}}* se ha desconectado a Minecraft!",
+    "logFileNotFound": "[MCB] archivo no encontrado: {{file}}",
+    "streamError": "[MCB] error de transmisión: {{error}}",
+    "watcherActive": "[MCB] observador activo en {{file}}",
+    "noPlayers": "No hay jugadores jugando por ahora"
+  }
+}
+
