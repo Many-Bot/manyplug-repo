@@ -1,7 +1,9 @@
 {
   "title": "Jogo da Forca",
-  "startCommand": "inicia o jogo",
-  "stopCommand": "encerra o jogo",
+  "startCommand": "começar",
+  "stopCommand": "parar",
+  "startCommandHelp": "inicia o jogo",
+  "stopCommandHelp": "encerra o jogo",
   "started": "Jogo da Forca iniciado!\n\nTema: *{{theme}}*\nPalavra: `{{word}}`\nVidas: {{lives}}\n\nDigite uma letra para adivinhar!",
   "stopped": "Jogo da Forca encerrado.",
   "invalidCommand": "Subcomando *{{sub}}* não existe.\nUse",

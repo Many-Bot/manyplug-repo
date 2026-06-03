@@ -1,7 +1,9 @@
 {
   "title": "Juego del Ahorcado",
-  "startCommand": "inicia el juego",
-  "stopCommand": "detiene el juego",
+  "startCommand": "inicia",
+  "stopCommand": "detiene",
+  "startCommandHelp": "inicia el juego",
+  "stopCommandHelp": "detiene el juego",
   "started": "¡Juego del Ahorcado iniciado!\n\nTema: *{{theme}}*\nPalabra: `{{word}}`\nVidas: {{lives}}\n\nEscribe una letra para adivinar!",
   "stopped": "Juego del Ahorcado terminado.",
   "invalidCommand": "El subcomando *{{sub}}* no existe.\nUsa",

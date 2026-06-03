@@ -1,7 +1,9 @@
 {
   "title": "Hangman Game",
-  "startCommand": "starts the game",
-  "stopCommand": "stops the game",
+  "startCommand": "start",
+  "stopCommand": "stop",
+  "startCommandHelp": "starts the game",
+  "stopCommandHelp": "stops the game",
   "started": "Hangman game started!\n\nTheme: *{{theme}}*\nWord: `{{word}}`\nLives: {{lives}}\n\nType a letter to guess!",
   "stopped": "Hangman game ended.",
   "invalidCommand": "Subcommand *{{sub}}* does not exist.\nUse",
