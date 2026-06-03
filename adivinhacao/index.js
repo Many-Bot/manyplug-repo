@@ -5,49 +5,46 @@
  * Multiple groups can play simultaneously without conflict.
  */
 
-import { CMD_PREFIX } from "../../config.js";
-import { createPluginI18n } from "../../utils/pluginI18n.js";
-
-const { t } = createPluginI18n(import.meta.url);
-
-const RANGE = { min: 1, max: 100 };
+const RANGE       = { min: 1, max: 100 };
 const jogosAtivos = new Map();
-
-const sorteio = () =>
+const sorteio     = () =>
   Math.floor(Math.random() * (RANGE.max - RANGE.min + 1)) + RANGE.min;
 
-export default async function ({ msg, api }) {
-  const chatId = api.chat.id;
+export default async function (ctx) {
+  const { msg }  = ctx;
+  const chatId   = ctx.chat.id;
+  const prefix   = ctx.config.get("CMD_PREFIX");
+  const { t }    = ctx.i18n.createT(import.meta.url);
 
   // ── !adivinhação ─────────────────────────────────────────
-  if (msg.is(CMD_PREFIX + "adivinhação")) {
+  if (msg.is(prefix + "adivinhação")) {
     const sub = msg.args[1];
 
     if (!sub) {
-      await api.send(
+      await ctx.send(
         `${t("title")}\n\n` +
-        `\`${CMD_PREFIX}adivinhação começar\` — ${t("startCommand")}\n` +
-        `\`${CMD_PREFIX}adivinhação parar\` — ${t("stopCommand")}`
+        `\`${prefix}adivinhação começar\` — ${t("startCommand")}\n` +
+        `\`${prefix}adivinhação parar\` — ${t("stopCommand")}`
       );
       return;
     }
 
     if (sub === "começar") {
       jogosAtivos.set(chatId, sorteio());
-      await api.send(t("started"));
-      api.log.info(t("gameLog.started"));
+      await ctx.send(t("started"));
+      ctx.log.info(t("gameLog.started"));
       return;
     }
 
     if (sub === "parar") {
       jogosAtivos.delete(chatId);
-      await api.send(t("stopped"));
-      api.log.info(t("gameLog.stopped"));
+      await ctx.send(t("stopped"));
+      ctx.log.info(t("gameLog.stopped"));
       return;
     }
 
-    await api.send(
-      `${t("invalidCommand", { sub })} \`${CMD_PREFIX}adivinhação começar\` ${t("or")} \`${CMD_PREFIX}adivinhação parar\`.`
+    await ctx.send(
+      `${t("invalidCommand", { sub })} \`${prefix}adivinhação começar\` ${t("or")} \`${prefix}adivinhação parar\`.`
     );
     return;
   }
@@ -60,7 +57,6 @@ export default async function ({ msg, api }) {
   if (!/^\d+$/.test(tentativa)) return;
 
   const num = parseInt(tentativa, 10);
-
   if (num < RANGE.min || num > RANGE.max) {
     await msg.reply(t("range", { min: RANGE.min, max: RANGE.max }));
     return;
@@ -68,10 +64,10 @@ export default async function ({ msg, api }) {
 
   if (num === numero) {
     await msg.reply(
-      `${t("correct", { number: numero })} \`${CMD_PREFIX}adivinhação começar\` ${t("playAgain")}`
+      `${t("correct", { number: numero })} \`${prefix}adivinhação começar\` ${t("playAgain")}`
     );
     jogosAtivos.delete(chatId);
   } else {
-    await api.send(num > numero ? t("lower") : t("higher"));
+    await ctx.send(num > numero ? t("lower") : t("higher"));
   }
 }

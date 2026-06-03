@@ -5,20 +5,12 @@
  * and uploads/sends to server. Handles /video and /audio commands.
  */
 
-import { execFile, spawn }  from "child_process";
-import { promisify }        from "util";
-import fs                   from "fs";
-import path                 from "path";
-import { enqueue }          from "../../download/queue.js";
-import { CMD_PREFIX, CONFIG } from "../../config.js";
-import { createPluginI18n } from "../../utils/pluginI18n.js";
+import { execFile, spawn } from "child_process";
+import { promisify }       from "util";
+import fs                  from "fs";
+import path                from "path";
 
 const execFileAsync = promisify(execFile);
-const {
-  UPL_MEDIA_TO_SRV    = "no",
-  MEDIA_SRV_API_KEY,
-} = CONFIG;
-const { t } = createPluginI18n(import.meta.url);
 
 fs.mkdirSync("logs", { recursive: true });
 const logStream = fs.createWriteStream("logs/video-error.log", { flags: "a" });
@@ -40,9 +32,9 @@ async function resolveRedditUrl(url) {
     url,
   ]);
 
-  const lines = stdout.trim().split("\n").filter(Boolean);
-  const videoUrl = lines.find(l => !l.includes("AUDIO")) ?? lines[0];
-  const audioUrl = lines.find(l => l.includes("AUDIO")) ?? null;
+  const lines     = stdout.trim().split("\n").filter(Boolean);
+  const videoUrl  = lines.find(l => !l.includes("AUDIO")) ?? lines[0];
+  const audioUrl  = lines.find(l => l.includes("AUDIO")) ?? null;
 
   return { url: videoUrl, audioUrl };
 }
@@ -55,13 +47,13 @@ function buildYtDlpArgs(url, format) {
   const isMp3     = format === "mp3";
 
   const args = [
-    "--print",            "after_move:filepath",
-    "--cookies",          "cookies.txt",
-    "--add-header",       "User-Agent:Mozilla/5.0",
-    "--retries",          "4",
-    "--fragment-retries", "5",
-    "--socket-timeout",   "15",
-    "--sleep-interval",   "1",
+    "--print",             "after_move:filepath",
+    "--cookies",           "cookies.txt",
+    "--add-header",        "User-Agent:Mozilla/5.0",
+    "--retries",           "4",
+    "--fragment-retries",  "5",
+    "--socket-timeout",    "15",
+    "--sleep-interval",    "1",
     "--max-sleep-interval","4",
     "--no-playlist",
   ];
@@ -82,7 +74,7 @@ function buildYtDlpArgs(url, format) {
   return args;
 }
 
-async function downloadYtDlp(url, id, format) {
+async function downloadYtDlp(url, id, format, t) {
   return new Promise((resolve, reject) => {
     const tmpDir = path.join(DOWNLOADS_DIR, id);
     fs.mkdirSync(tmpDir, { recursive: true });
@@ -131,33 +123,20 @@ async function downloadYtDlp(url, id, format) {
 }
 
 async function downloadRedditWithAudio(videoUrl, audioUrl, id, format) {
-  const tmpDir = path.join(DOWNLOADS_DIR, id);
+  const tmpDir   = path.join(DOWNLOADS_DIR, id);
   fs.mkdirSync(tmpDir, { recursive: true });
-  
-  const isMp3     = format === "mp3";
-  const filePath = isMp3 ? path.join(tmpDir, "audio.mp3") : path.join(tmpDir, "video.mp4");
 
-  let args;
-  if (isMp3) {
-    args = [
-      "-i", audioUrl,
-      "-shortest",
-      filePath,
-    ]
-  } else {
-    args = [
-      "-i", videoUrl,
-      "-i", audioUrl,
-      "-c:v", "copy",
-      "-c:a", "aac",
-      "-shortest",
-      filePath,
-    ]
-  }
+  const isMp3    = format === "mp3";
+  const filePath = isMp3
+    ? path.join(tmpDir, "audio.mp3")
+    : path.join(tmpDir, "video.mp4");
+
+  const args = isMp3
+    ? ["-i", audioUrl, "-shortest", filePath]
+    : ["-i", videoUrl, "-i", audioUrl, "-c:v", "copy", "-c:a", "aac", "-shortest", filePath];
 
   await new Promise((resolve, reject) => {
     const proc = spawn("ffmpeg", args);
-
     proc.stderr.on("data", d => logStream.write(d));
     proc.on("error", reject);
     proc.on("close", code => {
@@ -169,14 +148,14 @@ async function downloadRedditWithAudio(videoUrl, audioUrl, id, format) {
   return { filePath, tmpDir };
 }
 
-async function downloadMedia(url, id, format) {
-  const { url: resolvedUrl, audioUrl } = await resolveRedditUrl(url); 
+async function downloadMedia(url, id, format, t) {
+  const { url: resolvedUrl, audioUrl } = await resolveRedditUrl(url);
 
   if (audioUrl) {
     return downloadRedditWithAudio(resolvedUrl, audioUrl, id, format);
   }
 
-  return downloadYtDlp(resolvedUrl, id, format);
+  return downloadYtDlp(resolvedUrl, id, format, t);
 }
 
 // ─── Upload ───────────────────────────────────────────────────────────────────
@@ -184,7 +163,7 @@ async function downloadMedia(url, id, format) {
 const UPLOAD_RETRIES        = 4;
 const UPLOAD_RETRY_DELAY_MS = 3000;
 
-async function uploadToServer(filePath) {
+async function uploadToServer(filePath, apiKey) {
   const fileBuffer = fs.readFileSync(filePath);
   const fileName   = path.basename(filePath);
 
@@ -198,8 +177,8 @@ async function uploadToServer(filePath) {
       const body = new FormData();
       body.append("file", new Blob([fileBuffer]), fileName);
 
-      const res  = await fetch(UPLOAD_URL, { method: "POST", headers: { "x-api-key": MEDIA_SRV_API_KEY }, body });
-      const text = await res.text();
+      const res    = await fetch(UPLOAD_URL, { method: "POST", headers: { "x-api-key": apiKey }, body });
+      const text   = await res.text();
       console.log(`[video] Upload response: ${res.status} ${res.statusText}`);
 
       if (!res.ok) throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
@@ -207,7 +186,9 @@ async function uploadToServer(filePath) {
       const result = JSON.parse(text);
       if (!result.url) throw new Error("Server response missing url");
 
-      const finalUrl = result.url.startsWith("https") ? result.url : `https://api.stxerr.dev${result.url}`;
+      const finalUrl = result.url.startsWith("https")
+        ? result.url
+        : `https://api.stxerr.dev${result.url}`;
       return finalUrl;
 
     } catch (err) {
@@ -220,21 +201,24 @@ async function uploadToServer(filePath) {
 
 // ─── Queue Handler ────────────────────────────────────────────────────────────
 
-function handleMedia(url, format, cmd, { msg, api }) {
-  const id       = `${format}-${Date.now()}`;
-  const sendFile  = (p) => format === "mp3" ? api.sendAudio(p) : api.sendVideo(p);
+function handleMedia(url, format, cmd, ctx, t) {
+  const { msg }      = ctx;
+  const uplToSrv     = ctx.config.get("UPL_MEDIA_TO_SRV", "no");
+  const srvApiKey    = ctx.config.get("MEDIA_SRV_API_KEY");
+  const id           = `${format}-${Date.now()}`;
+  const sendFile     = (p) => format === "mp3" ? ctx.sendAudio(p) : ctx.sendVideo(p);
 
-  enqueue(
+  ctx.download.enqueue(
     async () => {
-      const { filePath, tmpDir } = await downloadMedia(url, id, format);
+      const { filePath, tmpDir } = await downloadMedia(url, id, format, t);
       try {
-        if (UPL_MEDIA_TO_SRV === "yes") {
-          const link = await uploadToServer(filePath);
+        if (uplToSrv === "yes") {
+          const link = await uploadToServer(filePath, srvApiKey);
           await msg.reply(`*Download:*\n${link}`);
         } else {
           await sendFile(filePath);
         }
-        api.log.info(`${cmd} completed → ${url}`);
+        ctx.log.info(`${cmd} completed → ${url}`);
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
@@ -245,10 +229,14 @@ function handleMedia(url, format, cmd, { msg, api }) {
 
 // ─── Command Entry Point ──────────────────────────────────────────────────────
 
-export default async function ({ msg, api }) {
+export default async function (ctx) {
+  const { msg }  = ctx;
+  const prefix   = ctx.config.get("CMD_PREFIX");
+  const { t }    = ctx.i18n.createT(import.meta.url);
+
   const commands = {
-    [CMD_PREFIX + "video"]: "mp4",
-    [CMD_PREFIX + "audio"]: "mp3",
+    [prefix + "video"]: "mp4",
+    [prefix + "audio"]: "mp3",
   };
 
   for (const [cmd, format] of Object.entries(commands)) {
@@ -261,7 +249,7 @@ export default async function ({ msg, api }) {
     }
 
     await msg.reply(t("downloading"));
-    handleMedia(url, format, cmd, { msg, api });
+    handleMedia(url, format, cmd, ctx, t);
     return;
   }
 }

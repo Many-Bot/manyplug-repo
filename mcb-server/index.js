@@ -1,83 +1,87 @@
+/**
+ * plugins/mcb-server/index.js
+ *
+ * Monitors a Minecraft Bedrock server log file and
+ * notifies a WhatsApp group when players connect/disconnect.
+ */
+
 import fs from "fs";
-import { CMD_PREFIX, CONFIG } from "../../config.js";
-import { createPluginT } from "../../i18n/index.js";
 
-const PLAYERS_FILE = "mcplayers.json"
-
-const { MC_GROUP_ID, MC_LOG_FILE } = CONFIG;
-const { t } = createPluginT(import.meta.url);
-
+const PLAYERS_FILE = "mcplayers.json";
 
 function loadPlayers() {
   try {
-    if (!fs.existsSync(PLAYERS_FILE))
-      return [];
-
+    if (!fs.existsSync(PLAYERS_FILE)) return [];
     return JSON.parse(fs.readFileSync(PLAYERS_FILE, "utf8"));
   } catch {
     return [];
   }
 }
 
-function savePlayers() {
-  fs.writeFileSync(
-    PLAYERS_FILE,
-    JSON.stringify(players, null, 2)
-  );
+function savePlayers(players) {
+  fs.writeFileSync(PLAYERS_FILE, JSON.stringify(players, null, 2));
 }
 
-let apiRef = null;
+let ctxRef  = null;
+let tRef    = null;
 let players = loadPlayers();
 
 function handleLine(line) {
-  if (!line || !apiRef) return;
+  if (!line || !ctxRef) return;
 
   const joinMatch = line.match(/Player Spawned: (.+?) xuid:/);
   if (joinMatch) {
-    apiRef.sendTo(MC_GROUP_ID, t("messages.playerConnected", { name: joinMatch[1] }));
+    const groupId = ctxRef.config.get("MC_GROUP_ID");
+    ctxRef.sendTo(groupId, tRef("messages.playerConnected", { name: joinMatch[1] }));
     players.push(joinMatch[1]);
-    savePlayers();
+    savePlayers(players);
     return;
   }
 
   const leaveMatch = line.match(/Player disconnected: (.+?), xuid:/);
   if (leaveMatch) {
-    apiRef.sendTo(MC_GROUP_ID, t("messages.playerDisconnected", { name: leaveMatch[1] }));
+    const groupId = ctxRef.config.get("MC_GROUP_ID");
+    ctxRef.sendTo(groupId, tRef("messages.playerDisconnected", { name: leaveMatch[1] }));
     players = players.filter(p => p !== leaveMatch[1]);
-    savePlayers();
+    savePlayers(players);
   }
 }
 
-export async function setup(api) {
-  apiRef = api;
+export async function setup(ctx) {
+  ctxRef = ctx;
+  const { t } = ctx.i18n.createT(import.meta.url);
+  tRef = t;
 
-  if (!fs.existsSync(MC_LOG_FILE)) {
-    api.log.error(t("messages.logFileNotFound", { file: MC_LOG_FILE }));
+  const logFile = ctx.config.get("MC_LOG_FILE");
+
+  if (!fs.existsSync(logFile)) {
+    ctx.log.error(t("messages.logFileNotFound", { file: logFile }));
     return;
   }
 
-  fs.watchFile(MC_LOG_FILE, { interval: 1000 }, (curr, prev) => {
+  fs.watchFile(logFile, { interval: 1000 }, (curr, prev) => {
     if (curr.size <= prev.size) return;
-
-    const stream = fs.createReadStream(MC_LOG_FILE, {
+    const stream = fs.createReadStream(logFile, {
       start: prev.size, end: curr.size, encoding: "utf8",
     });
-
     stream.on("data", chunk => {
       chunk.split("\n").forEach(line => handleLine(line.trim()));
     });
-
-    stream.on("error", err => api.log.error(t("messages.streamError", { error: err.message })));
+    stream.on("error", err =>
+      ctx.log.error(t("messages.streamError", { error: err.message }))
+    );
   });
 }
 
-export default async function ({ msg }) {
-  const body = (msg.body || "").trim();
+export default async function (ctx) {
+  const { msg } = ctx;
+  const prefix  = ctx.config.get("CMD_PREFIX");
+  const { t }   = ctx.i18n.createT(import.meta.url);
 
-  // !players - lista de players online
-  if (body.startsWith(CMD_PREFIX + "players")) {
-    const list = players.join("\n");
+  if (msg.is(prefix + "players")) {
+    const list = players.length
+      ? players.join("\n")
+      : t("messages.noPlayers");
     await msg.reply(`🎮 Players online (${players.length}):\n${list}`);
-    return;
   }
 }

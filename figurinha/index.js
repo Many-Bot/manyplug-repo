@@ -11,16 +11,11 @@
 
 import fs            from "fs";
 import path          from "path";
-import os            from "os";
 import { execFile }  from "child_process";
 import { promisify } from "util";
 
 import { createSticker } from "wa-sticker-formatter";
-import { emptyFolder }   from "../../utils/file.js";
-import { CMD_PREFIX } from "../../config.js";
-import { createPluginI18n } from "../../utils/pluginI18n.js";
 
-const { t } = createPluginI18n(import.meta.url);
 const execFileAsync = promisify(execFile);
 
 // ── Constants ────────────────────────────────────────────────
@@ -58,7 +53,7 @@ async function resizeImage(input, output) {
   await execFileAsync(FFMPEG, ["-i", input, "-vf", "scale=512:512:flags=lanczos", "-y", output]);
 }
 
-async function buildSticker(inputPath, isAnimated) {
+async function buildSticker(inputPath, isAnimated, t) {
   for (const quality of [80, 60, 40, 20]) {
     const buf = await createSticker(fs.readFileSync(inputPath), {
       pack:       t("pack"),
@@ -76,7 +71,7 @@ async function buildSticker(inputPath, isAnimated) {
  * Converte um objeto { mimetype, data } em sticker e envia.
  * Retorna true se ok, false se falhou.
  */
-async function processarUmaMedia(media, isGif, api, msg) {
+async function processarUmaMedia(media, isGif, ctx, msg, t) {
   ensureDir();
 
   const ext        = media.mimetype.split("/")[1];
@@ -85,7 +80,7 @@ async function processarUmaMedia(media, isGif, api, msg) {
 
   const id          = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const inputPath   = path.join(DOWNLOADS_DIR, `${id}.${ext}`);
-  const gifPath = path.join(DOWNLOADS_DIR, `${id}-animated.gif`);
+  const gifPath     = path.join(DOWNLOADS_DIR, `${id}-animated.gif`);
   const resizedPath = path.join(DOWNLOADS_DIR, `${id}-scaled.${ext}`);
 
   try {
@@ -100,11 +95,11 @@ async function processarUmaMedia(media, isGif, api, msg) {
       stickerInput = resizedPath;
     }
 
-    const buf = await buildSticker(stickerInput, isAnimated);
-    await api.sendSticker(buf);
+    const buf = await buildSticker(stickerInput, isAnimated, t);
+    await ctx.sendSticker(buf);
     return true;
   } catch (err) {
-    api.log.error(`Sticker generation error: ${err.message}`);
+    ctx.log.error(`Sticker generation error: ${err.message}`);
     await msg.reply(t("error.generic"));
     return false;
   } finally {
@@ -124,11 +119,13 @@ function isSupported(media, isGif) {
 }
 
 // ── Plugin ───────────────────────────────────────────────────
-export default async function ({ msg, api }) {
-  const chatId = api.chat.id;
+export default async function (ctx) {
+  const { msg } = ctx;
+  const chatId   = ctx.chat.id;
+  const prefix   = ctx.config.get("CMD_PREFIX");
+  const { t }    = ctx.i18n.createT(import.meta.url);
 
-  if (!msg.is(CMD_PREFIX + "figurinha")) {
-    // ── Coleta de mídia durante sessão ──────────────────────
+  if (!msg.is(prefix + "figurinha")) {
     const session = sessions.get(chatId);
     if (!session) return;
     if (!msg.hasMedia) return;
@@ -137,7 +134,8 @@ export default async function ({ msg, api }) {
     const media = await msg.downloadMedia();
     if (!media) return;
 
-    const gif = media.mimetype === "image/gif" ||
+    const gif =
+      media.mimetype === "image/gif" ||
       (media.mimetype === "video/mp4" && msg.isGif);
 
     if (isSupported(media, gif) && session.medias.length < MAX_MEDIA) {
@@ -147,6 +145,7 @@ export default async function ({ msg, api }) {
   }
 
   const sub = msg.args[1];
+
   // ── figurinha parar ──────────────────────────────────────
   if (sub === "parar") {
     const session = sessions.get(chatId);
@@ -154,6 +153,7 @@ export default async function ({ msg, api }) {
       await msg.reply(t("session.noneActive"));
       return;
     }
+
     clearTimeout(session.timeout);
     sessions.delete(chatId);
 
@@ -162,7 +162,6 @@ export default async function ({ msg, api }) {
   }
 
   // ── figurinha criar ──────────────────────────────────────
-
   if (sub === "criar") {
     const session = sessions.get(chatId);
 
@@ -179,56 +178,63 @@ export default async function ({ msg, api }) {
     await msg.reply(t("session.generating"));
 
     for (const { media, isGif } of session.medias) {
-      await processarUmaMedia(media, isGif, api, msg);
+      await processarUmaMedia(media, isGif, ctx, msg, t);
     }
 
     await msg.reply(t("session.success"));
     sessions.delete(chatId);
-    emptyFolder(DOWNLOADS_DIR);
+    ctx.utils.emptyFolder(DOWNLOADS_DIR);
     return;
   }
 
   // ── figurinha com mídia direta ───────────────────────────
   const mediasParaCriar = [];
 
-  // Mídia anexa à própria mensagem
   if (msg.hasMedia) {
     const media = await msg.downloadMedia();
     if (media) {
-      const gif = media.mimetype === "image/gif" ||
+      const gif =
+        media.mimetype === "image/gif" ||
         (media.mimetype === "video/mp4" && msg.isGif);
-      if (isSupported(media, gif)) mediasParaCriar.push({ media, isGif: gif });
+
+      if (isSupported(media, gif)) {
+        mediasParaCriar.push({ media, isGif: gif });
+      }
     }
   }
 
-  // Mídia da mensagem citada
   if (msg.hasReply) {
     const quoted = await msg.getReply();
     if (quoted?.hasMedia) {
       const media = await quoted.downloadMedia();
       if (media) {
-        const gif = media.mimetype === "image/gif" ||
+        const gif =
+          media.mimetype === "image/gif" ||
           (media.mimetype === "video/mp4" && quoted.isGif);
-        if (isSupported(media, gif)) mediasParaCriar.push({ media, isGif: gif });
+
+        if (isSupported(media, gif)) {
+          mediasParaCriar.push({ media, isGif: gif });
+        }
       }
     }
   }
 
-  // Tem mídia para criar direto
   if (mediasParaCriar.length > 0) {
     await msg.reply(t("session.generatingOne"));
+
     for (const { media, isGif } of mediasParaCriar) {
-      await processarUmaMedia(media, isGif, api, msg);
+      await processarUmaMedia(media, isGif, ctx, msg, t);
     }
-    emptyFolder(DOWNLOADS_DIR);
+
+    ctx.utils.emptyFolder(DOWNLOADS_DIR);
     return;
   }
 
   // ── figurinha sem mídia → abre sessão ───────────────────
   if (sessions.has(chatId)) {
     await msg.reply(
-      `${t("session.alreadyOpen")} \`${CMD_PREFIX}figurinha criar\`.\n` +
-      t("session.waitExpire")
+      `${t("session.alreadyOpen")} \`${prefix}figurinha criar\`.\n` +
+        t("session.waitExpire")
     );
     return;
   }
@@ -237,11 +243,16 @@ export default async function ({ msg, api }) {
     sessions.delete(chatId);
     try {
       await msg.reply(
-        `${t("session.expired")} \`${CMD_PREFIX}figurinha\` ${t("session.expiredEnd")}`
+        `${t("session.expired")} \`${prefix}figurinha\` ${t("session.expiredEnd")}`
       );
-    } catch { }
+    } catch {}
   }, SESSION_TIMEOUT);
 
-  sessions.set(chatId, { author: msg.sender, medias: [], timeout });
+  sessions.set(chatId, {
+    author: msg.sender,
+    medias: [],
+    timeout,
+  });
+
   await msg.reply(`${t("session.started")} *${msg.senderName}*!`);
 }
