@@ -2,7 +2,7 @@
     "name": "manymedia",
     "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
     "description": "Download videos and audio from any link.",
-    "version": "2.2.0",
+    "version": "3.2.0",
     "category": "media",
     "service": false,
     "externalDependencies": {

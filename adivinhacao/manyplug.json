@@ -2,7 +2,7 @@
     "name": "adivinhacao",
     "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
     "description": "Number guessing game for Manybot.", 
-    "version": "1.0.0",
+    "version": "2.0.0",
     "category": "games",
     "service": false,
     "dependencies": {}
