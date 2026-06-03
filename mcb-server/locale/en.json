@@ -4,6 +4,7 @@
     "playerDisconnected": "👋 *{{name}}* disconnected from Minecraft!",
     "logFileNotFound": "[MCB] file not found: {{file}}",
     "streamError": "[MCB] stream error: {{error}}",
-    "watcherActive": "[MCB] watcher active on {{file}}"
+    "watcherActive": "[MCB] watcher active on {{file}}",
+    "noPlayers": "There's no players playing for now"
   }
 }
