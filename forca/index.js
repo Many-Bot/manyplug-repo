@@ -11,7 +11,15 @@ const activeParticipants = new Map(); // chatId -> Set of users who reacted
 export let hangmanActive = false;
 
 // Sample words
-import words from "words.json" with { type: "json" };
+import { readFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const words = JSON.parse(
+  await readFile(join(__dirname, "words.json"), "utf8")
+);
 
 // Generate word with underscores
 const generateProgress = word => word.replace(/[a-zA-Z]/g, "_");
