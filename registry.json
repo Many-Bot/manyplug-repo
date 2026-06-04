@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-03T23:49:58.523Z",
+  "lastUpdated": "2026-06-04T04:28:26.259Z",
   "plugins": {
     "adivinhacao": {
       "name": "adivinhacao",
@@ -25,7 +25,7 @@
       "name": "forca",
       "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
       "description": "Hangman game for Manybot.",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "category": "games",
       "service": false,
       "dependencies": {}
