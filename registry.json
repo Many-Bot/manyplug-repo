@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-04T04:28:26.259Z",
+  "lastUpdated": "2026-06-05T22:20:31.966Z",
   "plugins": {
     "adivinhacao": {
       "name": "adivinhacao",
@@ -70,6 +70,15 @@
       "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
       "license": "MIT",
       "main": "index.js",
+      "dependencies": {}
+    },
+    "counting": {
+      "name": "counting",
+      "author": "SyntaxError <me@stxerr.dev> (https://www.stxerr.dev)",
+      "description": "Counting game for Manybot.",
+      "version": "1.0.0",
+      "category": "games",
+      "service": false,
       "dependencies": {}
     }
   }
