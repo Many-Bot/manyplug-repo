@@ -1,0 +1,9 @@
+{
+  "title": "Counting Game",
+  "description": "Take turns counting up. Don't repeat yourself!",
+  "rulesLine1": "Send the next number in sequence.",
+  "rulesLine2": "You can't follow your own number (but you can restart from 1).",
+  "rulesLine3": "Any mistake resets the count to 0.",
+  "current": "Current count: *{{number}}*",
+  "reset": "Count reset to 0."
+}

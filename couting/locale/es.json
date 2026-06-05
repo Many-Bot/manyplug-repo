@@ -1,0 +1,9 @@
+{
+  "title": "Juego de Conteo",
+  "description": "Turnarse contando. ¡No te repitas!",
+  "rulesLine1": "Envía el siguiente número en la secuencia.",
+  "rulesLine2": "No puedes continuar tu propio número (pero puedes reiniciar desde 1).",
+  "rulesLine3": "Cualquier error reinicia el conteo.",
+  "current": "Conteo actual: *{{number}}*",
+  "reset": "Conteo reiniciado."
+}
