@@ -1,5 +1,3 @@
 # manyplug-repo
 
-This is a mirror of ManyBot's plugin repository (ManyPlug).
-
-If you want to publish a plugin, you can make a pull request or send a Git patch to the email: `manybot@pm.me`.
+Want to publish a plugin? See: https://manybot.org/docs/how-to-make-a-plugin/
